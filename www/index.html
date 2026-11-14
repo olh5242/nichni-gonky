@@ -1,146 +1,534 @@
 <!DOCTYPE html>
 <html lang="uk"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Нічні гонки</title>
+<title>Нічні гонки 3D</title>
 <style>
-:root{--ac:#00e5ff;--ac2:#ff3d81;--bg:#0b0d17}
+:root{--ac:#00e5ff;--ac2:#ff3d81;--bg:#050510}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{position:fixed;inset:0;width:100%;height:100%}
-.s{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);background:radial-gradient(circle at 25% 20%,#1d3a8a,transparent 55%),radial-gradient(circle at 85% 95%,#8a1f5c,transparent 50%),var(--bg)}
+.s{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);background:radial-gradient(circle at 50% 20%,#1d1a4a,transparent 60%),var(--bg);z-index:10}
 .s.on{display:flex}
-h1{margin:0;font-size:clamp(30px,8vh,56px);letter-spacing:3px;background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
-h2{margin:0;font-size:24px}
-.b{border:0;border-radius:16px;padding:12px 34px;font-size:18px;font-weight:800;color:#06121a;background:linear-gradient(90deg,var(--ac),#7cf);box-shadow:0 0 22px rgba(0,229,255,.45);min-width:220px}
-.b.g{background:rgba(255,255,255,.1);color:#fff;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
-.b:active{transform:scale(.96)}
-.row{display:flex;gap:10px;justify-content:center;padding:0 12px}
-.k{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15);border-radius:16px;padding:10px 14px;min-width:120px;text-align:center;backdrop-filter:blur(6px)}
-.k.sel{border-color:var(--ac);box-shadow:0 0 18px rgba(0,229,255,.5)}
-.k b{display:block;font-size:16px}.k small{opacity:.75;font-size:12px}
-.k i{display:block;width:60px;height:26px;border-radius:8px;margin:0 auto 6px}
-.cap{opacity:.7;font-size:13px}
-.st{display:flex;gap:18px;font-weight:700;opacity:.9}
-.set{display:flex;align-items:center;justify-content:space-between;gap:20px;width:min(420px,90%);font-size:17px}
-#sp{font-size:clamp(40px,14vh,90px);font-weight:900;letter-spacing:8px;animation:f 2.4s ease forwards;background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px var(--ac))}
+h1{margin:0;font-size:clamp(30px,8vh,56px);letter-spacing:4px;text-shadow:0 0 20px var(--ac);color:#fff}
+h2{margin:0;font-size:24px;text-shadow:0 0 10px var(--ac2)}
+.b{border:0;border-radius:16px;padding:14px 34px;font-size:18px;font-weight:900;color:#000;background:linear-gradient(90deg,var(--ac),#7cf);box-shadow:0 0 22px rgba(0,229,255,.5);min-width:240px;text-transform:uppercase;letter-spacing:1px}
+.b.g{background:rgba(255,255,255,.1);color:#fff;box-shadow:none;border:2px solid rgba(255,255,255,.2)}
+.b:active{transform:scale(.96);filter:brightness(1.2)}
+.row{display:flex;gap:10px;justify-content:center;padding:0 12px;flex-wrap:wrap}
+.k{background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:12px;min-width:110px;text-align:center;backdrop-filter:blur(10px);transition:0.2s}
+.k.sel{border-color:var(--ac);box-shadow:0 0 20px var(--ac);background:rgba(0,229,255,.1)}
+.k b{display:block;font-size:16px;margin-bottom:4px}.k small{opacity:.7;font-size:12px}
+.k i{display:block;width:70px;height:30px;border-radius:6px;margin:0 auto 8px;box-shadow:0 0 10px inset rgba(0,0,0,0.5)}
+.cap{opacity:.8;font-size:14px;color:var(--ac);font-weight:bold}
+.st{display:flex;gap:20px;font-weight:900;font-size:18px;text-shadow:0 0 10px rgba(255,255,255,0.5)}
+.set{display:flex;align-items:center;justify-content:space-between;gap:20px;width:min(420px,90%);font-size:17px;margin-bottom:5px}
+#sp{font-size:clamp(40px,14vh,90px);font-weight:900;letter-spacing:8px;animation:f 2.5s ease forwards;color:#fff;text-shadow:0 0 30px var(--ac),0 0 60px var(--ac2)}
 @keyframes f{0%{opacity:0;transform:scale(.8)}30%,70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}
-#hud{display:none}
-#hud button{border:2px solid rgba(255,255,255,.35);background:rgba(15,20,35,.55);color:#fff;font-weight:800;backdrop-filter:blur(4px);position:fixed}
-#hud button:active,#hud button.on{background:rgba(0,229,255,.45);border-color:var(--ac)}
-#pb{top:calc(env(safe-area-inset-top,0px) + 8px);right:calc(env(safe-area-inset-right,0px) + 10px);width:46px;height:46px;border-radius:50%;font-size:18px}
-.pad{width:78px;height:78px;border-radius:20px;font-size:26px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
-#su{left:calc(env(safe-area-inset-left,0px) + 14px)}#sd{left:calc(env(safe-area-inset-left,0px) + 100px)}
-.ped{border-radius:14px;width:76px;font-size:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 6px,transparent 6px 14px)!important}
-#gs{right:calc(env(safe-area-inset-right,0px) + 14px);height:120px;border-color:#3ddc84!important}
-#br{right:calc(env(safe-area-inset-right,0px) + 100px);height:84px;border-color:#ff5252!important}
-#nb{right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 148px);width:76px;height:56px;border-radius:28px;color:#ffb300;border-color:#ff9100!important;font-size:13px}
-#gear{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);top:38%;display:flex;flex-direction:column;align-items:center;gap:6px;transform:translateY(-50%)}
-#gear button{position:static!important;width:56px;height:46px;border-radius:12px;font-size:18px}
-#gn{font:900 30px system-ui;width:56px;text-align:center;background:rgba(15,20,35,.55);border:2px solid var(--ac);border-radius:12px;padding:4px 0}
+#hud{display:none;pointer-events:none}
+#hud button{pointer-events:auto;border:2px solid rgba(255,255,255,.3);background:rgba(10,15,30,.6);color:#fff;font-weight:900;backdrop-filter:blur(6px);position:fixed;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,0,0,0.5)}
+#hud button:active,#hud button.on{background:rgba(0,229,255,.6);border-color:var(--ac);box-shadow:0 0 20px var(--ac)}
+#pb{top:calc(env(safe-area-inset-top,0px) + 15px);right:calc(env(safe-area-inset-right,0px) + 15px);width:50px;height:50px;border-radius:50%;font-size:20px;z-index:20}
+.pad{width:85px;height:85px;border-radius:25px;font-size:32px;bottom:calc(env(safe-area-inset-bottom,0px) + 20px)}
+#su{left:calc(env(safe-area-inset-left,0px) + 20px)}#sd{left:calc(env(safe-area-inset-left,0px) + 115px)}
+.ped{border-radius:20px;width:90px;font-size:16px;font-weight:900;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);display:flex;align-items:center;justify-content:center;flex-direction:column}
+#gs{right:calc(env(safe-area-inset-right,0px) + 20px);height:130px;border-color:#00e5ff!important;color:#00e5ff!important;text-shadow:0 0 10px #00e5ff}
+#br{right:calc(env(safe-area-inset-right,0px) + 120px);height:90px;border-color:#ff3d81!important;color:#ff3d81!important;text-shadow:0 0 10px #ff3d81}
+#nb{right:calc(env(safe-area-inset-right,0px) + 20px);bottom:calc(env(safe-area-inset-bottom,0px) + 165px);width:90px;height:60px;border-radius:30px;color:#ffd600;border-color:#ffd600!important;font-size:15px;text-shadow:0 0 10px #ffd600}
+#gear{position:fixed;left:calc(env(safe-area-inset-left,0px) + 20px);top:50%;display:flex;flex-direction:column;align-items:center;gap:10px;transform:translateY(-50%);pointer-events:auto}
+#gear button{position:static!important;width:60px;height:50px;border-radius:15px;font-size:22px}
+#gn{font:900 36px system-ui;width:60px;text-align:center;color:var(--ac);background:rgba(0,0,0,.6);border:2px solid var(--ac);border-radius:15px;padding:8px 0;box-shadow:0 0 15px var(--ac)}
 </style></head><body>
 <canvas id="c"></canvas>
-<div id="hud"><button id="pb">⏸</button>
-<div id="gear"><button id="gu">▲</button><div id="gn">1</div><button id="gd">▼</button></div>
-<button class="pad" id="su">▲</button><button class="pad" id="sd">▼</button>
-<button id="nb">NITRO</button><button class="ped" id="br">БРЕЙК</button><button class="ped" id="gs">ГАЗ</button></div>
 
+<!-- HUD -->
+<div id="hud">
+  <button id="pb">⏸</button>
+  <div id="gear"><button id="gu">▲</button><div id="gn">1</div><button id="gd">▼</button></div>
+  <button class="pad" id="su">◄</button><button class="pad" id="sd">►</button>
+  <button id="nb">NITRO</button>
+  <button class="ped" id="br">ГАЛЬМА</button>
+  <button class="ped" id="gs">ГАЗ</button>
+</div>
+
+<!-- Меню -->
 <div class="s on" id="splash"><div id="sp">DEV VLAD</div></div>
-<div class="s" id="lobby"><h1>🏎️ НІЧНІ ГОНКИ</h1><div class="st"><span id="lc"></span><span id="lb"></span></div>
-<button class="b" id="bp">▶ ГРАТИ</button><button class="b g" id="bs">⚙ Налаштування</button></div>
-<div class="s" id="sel"><h2>Обери режим і машину</h2><div class="row" id="modes"></div><div class="row" id="cars"></div><div class="cap" id="sc"></div>
-<div class="row"><button class="b g" id="sb" style="min-width:140px">← Назад</button><button class="b" id="sg">🏁 ПОЇХАЛИ</button></div></div>
-<div class="s" id="set"><h2>⚙ Налаштування</h2>
-<div class="set"><span>Коробка передач</span><button class="b g" id="t0" style="min-width:110px;padding:8px"></button></div>
-<div class="set"><span>Звук</span><button class="b g" id="t1" style="min-width:110px;padding:8px"></button></div>
-<div class="set"><span>Ефекти</span><button class="b g" id="t2" style="min-width:110px;padding:8px"></button></div>
-<div class="set"><span>Кермо</span><input type="range" id="t3" min="1" max="10"></div>
-<button class="b g" id="t4" style="min-width:160px;padding:8px">Скинути прогрес</button><button class="b" id="t5">← Назад</button></div>
-<div class="s" id="upd"><h1>⬆ ОНОВЛЕННЯ</h1><div class="st" id="um"></div><button class="b" id="u1">Оновити</button><button class="b g" id="u2">Пізніше</button></div>
-<div class="s" id="res"><h1 id="rt"></h1><div class="st" id="rx"></div><button class="b" id="r1"></button><button class="b g" id="r2">В лобі</button></div>
+<div class="s" id="lobby"><h1>НІЧНІ ГОНКИ</h1><div class="st"><span id="lc"></span><span id="lb"></span></div>
+<button class="b" id="bp">▶ ГРАТИ</button><button class="b g" id="bs">⚙ НАЛАШТУВАННЯ</button></div>
+<div class="s" id="sel"><h2>ОБЕРИ РЕЖИМ ТА МАШИНУ</h2><div class="row" id="modes"></div><div class="row" id="cars"></div><div class="cap" id="sc"></div>
+<div class="row" style="margin-top:10px"><button class="b g" id="sb" style="min-width:120px">← НАЗАД</button><button class="b" id="sg">🏁 СТАРТ</button></div></div>
+<div class="s" id="set"><h2>⚙ НАЛАШТУВАННЯ</h2>
+<div class="set"><span>Коробка передач</span><button class="b g" id="t0" style="min-width:130px;padding:10px"></button></div>
+<div class="set"><span>Звук</span><button class="b g" id="t1" style="min-width:130px;padding:10px"></button></div>
+<div class="set"><span>Ефекти</span><button class="b g" id="t2" style="min-width:130px;padding:10px"></button></div>
+<div class="set"><span>Чутливість керма</span><input type="range" id="t3" min="1" max="10" style="width:120px"></div>
+<div class="row" style="margin-top:20px"><button class="b g" id="t4" style="min-width:160px;padding:10px;font-size:14px;color:#ff5252;border-color:#ff5252">Скинути прогрес</button><button class="b" id="t5">← НАЗАД</button></div></div>
+<div class="s" id="upd"><h1>⬆ ОНОВЛЕННЯ</h1><div class="st" id="um"></div><button class="b" id="u1">ЗАВАНТАЖИТИ</button><button class="b g" id="u2">ПІЗНІШЕ</button></div>
+<div class="s" id="res"><h1 id="rt"></h1><div class="st" id="rx" style="flex-direction:column;text-align:center;line-height:1.8"></div><button class="b" id="r1" style="margin-top:20px"></button><button class="b g" id="r2">В ЛОБІ</button></div>
 
 <script>
-const BUILD=0;
+const BUILD=1;
 const $=i=>document.getElementById(i),cv=$('c'),x=cv.getContext('2d');
-let W,H,g=null,last=0,gas=0,brk=0,nit=0,stc=0,ac,rcb;
+let W,H,horizon,g=null,last=0,gas=0,brk=0,nit=0,stc=0,ac,rcb;
+let roadOffset=0;
+
 let S={coins:0,best:0,car:0,own:[0],mode:0,snd:1,fx:1,sens:5,auto:1};
 try{Object.assign(S,JSON.parse(localStorage.getItem('ng3')||'{}'))}catch(e){}
 const sv=()=>{try{localStorage.setItem('ng3',JSON.stringify(S))}catch(e){}};
 const CARS=[{n:'Спарк',c:'#00e5ff',sp:1,h:1,p:0},{n:'Фурія',c:'#ff3d81',sp:1.08,h:1.15,p:300},{n:'Тайфун',c:'#ffd600',sp:1.18,h:1.3,p:800},{n:'Фантом',c:'#b388ff',sp:1.3,h:1.5,p:1500}];
-const MODES=[{n:'Класика',d:'Їдь без кінця',t:0,m:1},{n:'На час',d:'60 с, монета +2 с',t:60,m:1},{n:'Хардкор',d:'Багато трафіку, ×2 монети',t:0,m:2}];
+const MODES=[{n:'Класика',d:'Їдь без кінця',t:0,m:1},{n:'На час',d:'60 с, монета +2 с',t:60,m:1},{n:'Хардкор',d:'Багато трафіку, ×2',t:0,m:2}];
 const GM=[0,55,100,150,205,260];
-function beep(f,d,t){if(!S.snd)return;try{ac=ac||new AudioContext();const o=ac.createOscillator(),v=ac.createGain();o.type=t||'square';o.frequency.value=f;v.gain.value=.04;v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(v);v.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+
+// --- АУДІО ---
+function beep(f,d,t){if(!S.snd)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),v=ac.createGain();o.type=t||'square';o.frequency.value=f;v.gain.value=.05;v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(v);v.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+
+// --- ЕКРАНИ ---
 function show(id){document.querySelectorAll('.s').forEach(s=>s.classList.remove('on'));if(id)$(id).classList.add('on');$('hud').style.display=id?'none':'block'}
 function lobby(){$('lc').textContent='🪙 '+S.coins;$('lb').textContent='🏆 '+S.best+' м';show('lobby')}
-function rend(){$('modes').innerHTML=MODES.map((m,i)=>`<div class="k ${i==S.mode?'sel':''}" onclick="S.mode=${i};sv();rend()"><b>${m.n}</b><small>${m.d}</small></div>`).join('');
-$('cars').innerHTML=CARS.map((c,i)=>`<div class="k ${i==S.car?'sel':''}" onclick="pick(${i})"><i style="background:${c.c}"></i><b>${c.n}</b><small>${S.own.includes(i)?'Макс. '+Math.round(260*c.sp)+' км/г':'🔒 '+c.p+' 🪙'}</small></div>`).join('');$('sc').textContent='🪙 '+S.coins}
-function pick(i){if(S.own.includes(i))S.car=i;else if(S.coins>=CARS[i].p){S.coins-=CARS[i].p;S.own.push(i);S.car=i;beep(900,.2)}else beep(150,.2);sv();rend()}
+function rend(){
+  $('modes').innerHTML=MODES.map((m,i)=>`<div class="k ${i==S.mode?'sel':''}" onclick="S.mode=${i};sv();rend()"><b>${m.n}</b><small>${m.d}</small></div>`).join('');
+  $('cars').innerHTML=CARS.map((c,i)=>`<div class="k ${i==S.car?'sel':''}" onclick="pick(${i})"><i style="background:${c.c}"></i><b>${c.n}</b><small>${S.own.includes(i)?'Макс. '+Math.round(260*c.sp)+' км/г':'🔒 '+c.p+' 🪙'}</small></div>`).join('');
+  $('sc').textContent='🪙 '+S.coins;
+}
+function pick(i){if(S.own.includes(i))S.car=i;else if(S.coins>=CARS[i].p){S.coins-=CARS[i].p;S.own.push(i);S.car=i;beep(900,.2)}else beep(150,.3,'sawtooth');sv();rend()}
 function tog(){$('t0').textContent=S.auto?'АВТОМАТ':'МЕХАНІКА';$('t1').textContent=S.snd?'УВІМК':'ВИМК';$('t2').textContent=S.fx?'УВІМК':'ВИМК';$('t3').value=S.sens}
-function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;x.setTransform(d,0,0,d,0,0)}
+
+// --- КАНВАС ТА РОЗМІРИ ---
+function rs(){
+  const d=devicePixelRatio||1;
+  W=innerWidth;H=innerHeight;
+  cv.width=W*d;cv.height=H*d;
+  x.setTransform(d,0,0,d,0,0);
+  horizon = H * 0.35; // Лінія горизонту
+}
 addEventListener('resize',rs);rs();
-function hold(id,on,off){const e=$(id);e.addEventListener('pointerdown',v=>{v.preventDefault();e.classList.add('on');on()});['pointerup','pointercancel','pointerleave'].forEach(n=>e.addEventListener(n,()=>{e.classList.remove('on');off()}))}
-hold('gs',()=>gas=1,()=>gas=0);hold('br',()=>brk=1,()=>brk=0);hold('nb',()=>nit=1,()=>nit=0);hold('su',()=>stc=-1,()=>stc=0);hold('sd',()=>stc=1,()=>stc=0);
+
+// --- КЕРУВАННЯ ---
+function hold(id,on,off){
+  const e=$(id);
+  e.addEventListener('pointerdown',v=>{v.preventDefault();e.classList.add('on');on()});
+  ['pointerup','pointercancel','pointerleave'].forEach(n=>e.addEventListener(n,()=>{e.classList.remove('on');off()}))
+}
+hold('gs',()=>gas=1,()=>gas=0);
+hold('br',()=>brk=1,()=>brk=0);
+hold('nb',()=>nit=1,()=>nit=0);
+hold('su',()=>stc=-1,()=>stc=0);
+hold('sd',()=>stc=1,()=>stc=0);
 function shift(d){if(!g||S.auto)return;const n=Math.max(0,Math.min(5,g.gear+d));if(n!=g.gear){g.gear=n;beep(300,.06)}}
 $('gu').onclick=()=>shift(1);$('gd').onclick=()=>shift(-1);
-addEventListener('keydown',e=>{if(e.key=='ArrowUp')stc=-1;if(e.key=='ArrowDown')stc=1;if(e.key==' ')gas=1;if(e.key=='b')brk=1;if(e.key=='e')shift(1);if(e.key=='q')shift(-1)});
-addEventListener('keyup',e=>{if(e.key.startsWith('Arrow'))stc=0;if(e.key==' ')gas=0;if(e.key=='b')brk=0});
-$('bp').onclick=()=>{beep(600,.1);rend();show('sel')};$('bs').onclick=()=>{tog();show('set')};
+
+addEventListener('keydown',e=>{
+  if(e.key=='ArrowUp')stc=-1;if(e.key=='ArrowDown')stc=1;
+  if(e.key==' ')gas=1;if(e.key=='b')brk=1;
+  if(e.key=='e')shift(1);if(e.key=='q')shift(-1)
+});
+addEventListener('keyup',e=>{
+  if(e.key.startsWith('Arrow'))stc=0;
+  if(e.key==' ')gas=0;if(e.key=='b')brk=0
+});
+
+$('bp').onclick=()=>{beep(600,.1);rend();show('sel')};
+$('bs').onclick=()=>{tog();show('set')};
 $('sb').onclick=lobby;$('t5').onclick=lobby;$('r2').onclick=lobby;$('sg').onclick=start;$('r1').onclick=()=>rcb();
 $('t0').onclick=()=>{S.auto^=1;sv();tog()};$('t1').onclick=()=>{S.snd^=1;sv();tog()};$('t2').onclick=()=>{S.fx^=1;sv();tog()};$('t3').oninput=e=>{S.sens=+e.target.value;sv()};
 $('t4').onclick=()=>{S={coins:0,best:0,car:0,own:[0],mode:0,snd:1,fx:1,sens:5,auto:1};sv();tog()};
-$('pb').onclick=()=>{g.run=0;res('ПАУЗА','','▶ Продовжити',()=>{show(null);g.run=1;last=performance.now();requestAnimationFrame(loop)})};
-function res(t,s,b,f){$('rt').textContent=t;$('rx').innerHTML=s;$('r1').textContent=b;rcb=f;gas=brk=nit=stc=0;show('res')}
-function start(){const m=MODES[S.mode];gas=brk=nit=stc=0;g={y:H/2,v:0,rpm:.15,gear:1,sc:0,e:[],c:[],p:[],sp:0,dist:0,time:m.t,coins:0,nit:100,inv:0,st:200,off:0,run:1,car:CARS[S.car],m,hard:S.mode==2};show(null);last=performance.now();requestAnimationFrame(loop)}
-const rr=(a,b)=>a+Math.random()*(b-a),hit=(ax,ay,bx,by,w,h)=>Math.abs(ax-bx)<w&&Math.abs(ay-by)<h;
-function end(){const gain=g.coins*g.m.m,d=Math.floor(g.dist);S.coins+=gain;const nb=d>S.best;if(nb)S.best=d;sv();g.run=0;
-res(g.m.t&&g.time<=0?'ЧАС ВИЙШОВ':'АВАРІЯ','<span>📏 '+d+' м</span><span>🪙 +'+gain+'</span>'+(nb?'<span>🏆 Новий рекорд!</span>':''),'↻ Ще раз',start)}
-function loop(now){if(!g||!g.run)return;const dt=Math.min(2.5,(now-last)/16.7);last=now;
-const L=H*.17,Wd=L*.48,px=W*.2,top=H*.2,bot=H*.8,hd=g.hard,cs=g.car.sp;
-const boost=nit&&g.nit>0&&g.gear>0;g.nit=boost?g.nit-.8*dt:Math.min(100,g.nit+.2*dt);
-const gm=GM[g.gear]*cs;let rt=g.gear?g.v/gm*.8+(gas?.2:.05):(gas?.95:.15);g.rpm+=(rt-g.rpm)*.2*dt;
-if(gas&&g.gear&&g.rpm<1){g.v+=.55*(1-g.v/(gm+(boost?40:0)))*(g.rpm<.3?.5:1)*cs*dt+(boost?.45*dt:0)}
-g.v-=((.02+g.v*.0007)+(brk?1.8:0)+(g.gear&&g.v>gm+(boost?40:0)?.6:0))*dt;g.v=Math.max(0,g.v);
-g.sc-=dt;if(S.auto&&g.sc<=0){if(gas&&g.gear<5&&g.rpm>.88){g.gear++;g.sc=25;beep(300,.06)}else if(g.gear>1&&g.v<GM[g.gear-1]*cs*.65){g.gear--;g.sc=25}}
-g.sp=g.v*.06;g.y+=stc*H*.0115*g.car.h*(S.sens/5)*Math.min(1,.35+g.v/60)*dt;g.y=Math.max(top+Wd/2,Math.min(bot-Wd/2,g.y));
-g.dist+=g.v/3.6*dt/60;g.off=(g.off+g.sp*dt)%80;g.inv=Math.max(0,g.inv-dt);
-if(g.m.t&&g.v>0){g.time-=dt/60;if(g.time<=0){end();return}}
-g.st-=g.sp*dt;if(g.st<=0&&g.v>5){const f=()=>rr(top+Wd/2,bot-Wd/2),ev=()=>.06*(30+rr(0,45)+Math.min(40,g.dist/50));
-g.e.push({x:W+L,y:f(),v:ev(),c:['#e53935','#43a047','#8e24aa','#039be5','#fdd835','#fb8c00'][Math.random()*6|0]});
-if(hd&&Math.random()<.5)g.e.push({x:W+L*2.5,y:f(),v:ev(),c:'#e53935'});
-if(Math.random()<.5)g.c.push({x:W+L+rr(0,160),y:f()});g.st=Math.max(110,rr(260,440)*(hd?.65:1)/(1+g.dist/4000))}
-for(const e of g.e){e.x-=(g.sp-e.v)*dt;if(!g.inv&&hit(e.x,e.y,px,g.y,L*.92,Wd*.9)){beep(120,.35,'sawtooth');navigator.vibrate&&navigator.vibrate(80);
-if(S.fx)for(let i=0;i<24;i++)g.p.push({x:px,y:g.y,vx:rr(-5,5),vy:rr(-5,5),l:30,c:'#ff9100'});
-if(g.m.t){g.time-=5;g.inv=90;g.v*=.3;if(g.time<=0){end();return}}else{end();return}}}
-for(const c of g.c){c.x-=g.sp*dt;if(hit(c.x,c.y,px,g.y,L*.6,Wd*.8)){c.x=-999;g.coins++;beep(1200,.08,'sine');if(g.m.t)g.time+=2}}
-g.e=g.e.filter(e=>e.x>-L*2);g.c=g.c.filter(c=>c.x>-50);
-if(S.fx&&boost)g.p.push({x:px-L/2,y:g.y,vx:rr(-6,-3),vy:rr(-1,1),l:18,c:'#ffb300'});
-for(const p of g.p){p.x+=p.vx*dt;p.y+=p.vy*dt;p.l-=dt}g.p=g.p.filter(p=>p.l>0);
-$('gn').textContent=g.gear?g.gear:'N';$('gu').style.opacity=$('gd').style.opacity=S.auto?.35:1;
-draw(L,Wd,px,top,bot,boost);requestAnimationFrame(loop)}
-function car(cx,cy,L,Wd,col,glow){x.save();x.shadowColor=glow?col:'transparent';x.shadowBlur=glow?18:0;x.fillStyle=col;x.beginPath();x.roundRect(cx-L/2,cy-Wd/2,L,Wd,Wd*.3);x.fill();x.restore();
-x.fillStyle='rgba(10,20,30,.75)';x.fillRect(cx+L*.02,cy-Wd*.34,L*.26,Wd*.68);x.fillRect(cx-L*.34,cy-Wd*.3,L*.18,Wd*.6);
-x.fillStyle='#fff8c4';x.fillRect(cx+L*.44,cy-Wd*.36,L*.06,Wd*.2);x.fillRect(cx+L*.44,cy+Wd*.16,L*.06,Wd*.2)}
-function dial(cx,cy,r,v,col,lab,red){x.lineWidth=r*.16;x.lineCap='round';x.strokeStyle='rgba(255,255,255,.15)';x.beginPath();x.arc(cx,cy,r,.75*Math.PI,2.25*Math.PI);x.stroke();
-x.strokeStyle=red&&v>.85?'#ff3d3d':col;x.beginPath();x.arc(cx,cy,r,.75*Math.PI,(.75+1.5*Math.min(1,v))*Math.PI);x.stroke();
-x.fillStyle='#fff';x.textAlign='center';x.font='700 '+r*.28+'px system-ui';x.fillText(lab,cx,cy+r*.75)}
-function draw(L,Wd,px,top,bot,boost){
-x.fillStyle='#0d1f12';x.fillRect(0,0,W,H);x.fillStyle='#16301c';x.fillRect(0,0,W,top);x.fillRect(0,bot,W,H-bot);
-for(let i=-1;i<W/160+1;i++){const lx=i*160-(g.off*1.5%160);x.fillStyle='#ffd54f';x.fillRect(lx,top-14,4,14);x.fillRect(lx+80,bot,4,14)}
-x.fillStyle='#2a2f3a';x.fillRect(0,top,W,bot-top);x.fillStyle='#fff';x.fillRect(0,top,W,4);x.fillRect(0,bot-4,W,4);
-x.fillStyle='rgba(255,255,255,.55)';const l1=top+(bot-top)/3,l2=top+(bot-top)*2/3;for(let i=-1;i<W/80+1;i++){const lx=i*80-g.off;x.fillRect(lx,l1-2,40,4);x.fillRect(lx,l2-2,40,4)}
-for(const c of g.c){x.fillStyle='#ffd600';x.shadowColor='#ffd600';x.shadowBlur=12;x.beginPath();x.arc(c.x,c.y,L*.1,0,7);x.fill();x.shadowBlur=0}
-for(const e of g.e)car(e.x,e.y,L,Wd,e.c,0);
-for(const p of g.p){x.globalAlpha=Math.max(0,p.l/30);x.fillStyle=p.c;x.fillRect(p.x,p.y,5,5)}x.globalAlpha=1;
-if(!(g.inv&&Math.floor(g.inv/6)%2)){if(boost){x.fillStyle='#ff9100';x.beginPath();x.moveTo(px-L/2,g.y-Wd*.25);x.lineTo(px-L*.95,g.y);x.lineTo(px-L/2,g.y+Wd*.25);x.fill()}car(px,g.y,L,Wd,g.car.c,1)}
-x.fillStyle='#fff';x.font='700 '+Math.max(14,H*.045)+'px system-ui';x.textAlign='left';x.fillText('📏 '+Math.floor(g.dist)+' м',16,H*.08);
-x.textAlign='center';x.fillText('🪙 '+g.coins,W/2,H*.08);if(g.m.t){x.textAlign='right';x.fillText('⏱ '+Math.max(0,Math.ceil(g.time)),W-76,H*.08)}
-const r=H*.12,cy=H-r*1.5;dial(W/2-r*1.3,cy,r,g.v/(260*g.car.sp),'#00e5ff',Math.round(g.v)+' км/г');dial(W/2+r*1.3,cy,r,g.rpm,'#ffd600',Math.round(g.rpm*8000)+' об',1);
-x.fillStyle='#fff';x.font='900 '+r*.9+'px system-ui';x.textAlign='center';x.fillText(g.gear?g.gear:'N',W/2,cy+r*.3);x.font='700 '+r*.28+'px system-ui';x.fillText(S.auto?'АКПП':'МКПП',W/2,cy+r*.7);
-x.fillStyle='rgba(255,255,255,.2)';x.fillRect(W/2-r*2.4,H-12,r*4.8,6);x.fillStyle='#ff9100';x.fillRect(W/2-r*2.4,H-12,r*4.8*g.nit/100,6);
-if(g.v<1&&g.dist<5){x.fillStyle='#3ddc84';x.font='800 '+H*.05+'px system-ui';x.fillText('Тисни ГАЗ →',W/2,H*.5)}}
+$('pb').onclick=()=>{g.run=0;res('ПАУЗА','','▶ ПРОДОВЖИТИ',()=>{show(null);g.run=1;last=performance.now();requestAnimationFrame(loop)})};
+
+function res(t,s,b,f){
+  $('rt').textContent=t;$('rx').innerHTML=s;$('r1').textContent=b;rcb=f;
+  gas=brk=nit=stc=0;show('res')
+}
+
+// --- ЛОГІКА ГРИ ---
+function start(){
+  const m=MODES[S.mode];
+  gas=brk=nit=stc=0;roadOffset=0;
+  g={
+    y:0, v:0, rpm:.15, gear:1, sc:0, 
+    traffic:[], coins:[], particles:[], speedLines:[], 
+    dist:0, time:m.t, coinCount:0, nit:100, inv:0, st:200, 
+    run:1, car:CARS[S.car], m, hard:S.mode==2
+  };
+  show(null);last=performance.now();requestAnimationFrame(loop)
+}
+
+const rr=(a,b)=>a+Math.random()*(b-a);
+
+function end(){
+  const gain=g.coinCount*g.m.m, d=Math.floor(g.dist);
+  S.coins+=gain;
+  const nb=d>S.best;
+  if(nb)S.best=d;
+  sv();g.run=0;
+  res(g.m.t&&g.time<=0?'ЧАС ВИЙШОВ':'АВАРІЯ',
+    `<span>📏 ${d} М</span><span>🪙 +${gain}</span>`+(nb?'<span style="color:#00e5ff">🏆 НОВИЙ РЕКОРД!</span>':''),
+    '↻ ЩЕ РАЗ',start)
+}
+
+function loop(now){
+  if(!g||!g.run)return;
+  const dt=Math.min(2.5,(now-last)/16.7);last=now;
+  
+  // Фізика
+  const cs=g.car.sp;
+  const boost=nit&&g.nit>0&&g.gear>0;
+  g.nit=boost?g.nit-.8*dt:Math.min(100,g.nit+.2*dt);
+  const gm=GM[g.gear]*cs;
+  let rt=g.gear?g.v/gm*.8+(gas?.2:.05):(gas?.95:.15);
+  g.rpm+=(rt-g.rpm)*.2*dt;
+  
+  if(gas&&g.gear&&g.rpm<1){
+    g.v+=.55*(1-g.v/(gm+(boost?40:0)))*(g.rpm<.3?.5:1)*cs*dt+(boost?.45*dt:0)
+  }
+  g.v-=((.02+g.v*.0007)+(brk?1.8:0)+(g.gear&&g.v>gm+(boost?40:0)?.6:0))*dt;
+  g.v=Math.max(0,g.v);
+  
+  // Автоматична коробка
+  g.sc-=dt;
+  if(S.auto&&g.sc<=0){
+    if(gas&&g.gear<5&&g.rpm>.88){g.gear++;g.sc=25;beep(300,.06)}
+    else if(g.gear>1&&g.v<GM[g.gear-1]*cs*.65){g.gear--;g.sc=25}
+  }
+  
+  // Рух по дорозі
+  g.dist+=g.v/3.6*dt/60;
+  roadOffset = (roadOffset + g.v * dt * 0.5) % 100;
+  
+  // Керування (горизонтальний зсув)
+  const maxShift = W * 0.35;
+  g.y += stc * maxShift * 0.05 * g.car.h * (S.sens/5) * Math.min(1,.35+g.v/60) * dt;
+  g.y = Math.max(-maxShift, Math.min(maxShift, g.y));
+  
+  g.inv=Math.max(0,g.inv-dt);
+  if(g.m.t&&g.v>0){g.time-=dt/60;if(g.time<=0){end();return}}
+  
+  // Спавн трафіку та монет
+  g.st-=g.v*dt*0.1;
+  if(g.st<=0 && g.v>5){
+    const lanes = [-maxShift*0.6, 0, maxShift*0.6];
+    const lane = lanes[Math.random()*lanes.length|0];
+    
+    // Трафік
+    g.traffic.push({ z: 1000, x: lane, c: ['#e53935','#43a047','#8e24aa','#039be5','#fdd835','#fb8c00'][Math.random()*6|0] });
+    if(g.hard && Math.random()<0.5) g.traffic.push({ z: 1000, x: lanes[Math.random()*lanes.length|0], c: '#e53935' });
+    
+    // Монети
+    if(Math.random()<0.6) {
+      g.coins.push({ z: 1000, x: lane + rr(-40,40) });
+    }
+    g.st = Math.max(60, rr(200,350) * (g.hard?.6:1) / (1 + g.dist/4000));
+  }
+  
+  // Оновлення трафіку
+  for(let i=g.traffic.length-1; i>=0; i--){
+    let e = g.traffic[i];
+    e.z -= (g.v * 1.5) * dt; // Наближення до гравця
+    if(e.z <= 0){ // Зіткнення
+      if(!g.inv && Math.abs(e.x - g.y) < 100){
+        beep(120,.35,'sawtooth');navigator.vibrate&&navigator.vibrate(100);
+        if(S.fx) for(let k=0;k<20;k++) g.particles.push({x:W/2+g.y, y:H*0.8, vx:rr(-10,10), vy:rr(-15,-5), l:30, c:'#ff9100'});
+        if(g.m.t){g.time-=5;g.inv=90;g.v*=.3;if(g.time<=0){end();return}}else{end();return}
+      }
+    }
+    if(e.z < -100) g.traffic.splice(i,1);
+  }
+  
+  // Оновлення монет
+  for(let i=g.coins.length-1; i>=0; i--){
+    let c = g.coins[i];
+    c.z -= (g.v * 1.5) * dt;
+    if(c.z <= 0 && c.z > -100){
+      if(Math.abs(c.x - g.y) < 80){
+        g.coinCount++;beep(1200,.08,'sine');if(g.m.t)g.time+=2;
+        g.coins.splice(i,1);continue;
+      }
+    }
+    if(c.z < -100) g.coins.splice(i,1);
+  }
+  
+  // Ефекти швидкості
+  if(S.fx && g.v > 30){
+    if(Math.random() < 0.5) {
+      g.speedLines.push({x: rr(0, W), y: rr(0, H), len: rr(20, 100), sp: g.v});
+    }
+  }
+  for(let i=g.speedLines.length-1; i>=0; i--){
+    g.speedLines[i].y += (g.v * 2) * dt;
+    if(g.speedLines[i].y > H) g.speedLines.splice(i,1);
+  }
+  
+  // Частинки
+  if(S.fx&&boost) g.particles.push({x:W/2+g.y, y:H*0.85, vx:rr(-3,3), vy:rr(5,15), l:18, c:'#ffb300'});
+  for(let i=g.particles.length-1; i>=0; i--){
+    let p = g.particles[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.l-=dt;
+    if(p.l<=0) g.particles.splice(i,1);
+  }
+
+  // HUD
+  $('gn').textContent=g.gear?g.gear:'N';
+  $('gu').style.opacity=$('gd').style.opacity=S.auto?.35:1;
+  
+  draw(boost);
+  requestAnimationFrame(loop)
+}
+
+// --- МАЛЮВАННЯ (PSEUDO-3D) ---
+function car3D(cx, cy, width, col, isPlayer, glow) {
+  const h = width * 1.5; // Висота машини
+  const w = width;
+  
+  x.save();
+  if(glow){
+    x.shadowColor = col;
+    x.shadowBlur = 20;
+  }
+  
+  // Тінь
+  x.fillStyle = 'rgba(0,0,0,0.6)';
+  x.beginPath();
+  x.ellipse(cx, cy + h/2, w*0.6, h*0.15, 0, 0, Math.PI*2);
+  x.fill();
+  
+  // Кузов
+  x.fillStyle = col;
+  x.beginPath();
+  x.roundRect(cx - w/2, cy - h/2, w, h, w*0.15);
+  x.fill();
+  
+  // Дах (заднє скло)
+  x.fillStyle = 'rgba(10,15,25,0.9)';
+  x.beginPath();
+  x.roundRect(cx - w*0.4, cy - h*0.4, w*0.8, h*0.4, w*0.1);
+  x.fill();
+  
+  // Задні ліхтарі
+  x.fillStyle = '#ff0000';
+  x.shadowColor = '#ff0000';
+  x.shadowBlur = 15;
+  x.fillRect(cx - w*0.4, cy + h*0.25, w*0.2, h*0.1);
+  x.fillRect(cx + w*0.2, cy + h*0.25, w*0.2, h*0.1);
+  
+  // Номер
+  if(isPlayer) {
+    x.fillStyle = '#fff';
+    x.font = `900 ${w*0.2}px system-ui`;
+    x.textAlign = 'center';
+    x.fillText('777', cx, cy + h*0.15);
+  }
+  
+  // Колеса
+  x.fillStyle = '#111';
+  x.fillRect(cx - w*0.55, cy - h*0.3, w*0.1, h*0.3);
+  x.fillRect(cx + w*0.45, cy - h*0.3, w*0.1, h*0.3);
+  
+  x.restore();
+}
+
+function draw(boost){
+  // Небо (Місто)
+  let skyGrad = x.createLinearGradient(0, 0, 0, horizon);
+  skyGrad.addColorStop(0, '#050510');
+  skyGrad.addColorStop(1, '#1a103c');
+  x.fillStyle = skyGrad;
+  x.fillRect(0, 0, W, horizon);
+  
+  // Задній план (Будівлі)
+  x.fillStyle = '#0a0a1a';
+  for(let i=0; i<15; i++){
+    let bw = W/10;
+    let bh = 50 + Math.sin(i*13)*40;
+    x.fillRect(i*bw - (roadOffset*0.1)%bw, horizon - bh, bw-2, bh);
+    // Вікна
+    x.fillStyle = 'rgba(0, 229, 255, 0.2)';
+    x.fillRect(i*bw + 10 - (roadOffset*0.1)%bw, horizon - bh + 10, 5, 5);
+    x.fillStyle = '#0a0a1a';
+  }
+  
+  // Земля
+  x.fillStyle = '#05050f';
+  x.fillRect(0, horizon, W, H - horizon);
+  
+  // Дорога (Трапеція)
+  const roadBottomW = W * 1.5;
+  const roadTopW = W * 0.1;
+  const roadBottomY = H;
+  const roadTopY = horizon;
+  
+  x.fillStyle = '#151520';
+  x.beginPath();
+  x.moveTo(W/2 - roadTopW/2, roadTopY);
+  x.lineTo(W/2 + roadTopW/2, roadTopY);
+  x.lineTo(W/2 + roadBottomW/2, roadBottomY);
+  x.lineTo(W/2 - roadBottomW/2, roadBottomY);
+  x.closePath();
+  x.fill();
+  
+  // Неонові бордюри
+  x.strokeStyle = '#00e5ff';
+  x.lineWidth = 4;
+  x.shadowColor = '#00e5ff';
+  x.shadowBlur = 15;
+  x.beginPath();
+  x.moveTo(W/2 - roadTopW/2, roadTopY); x.lineTo(W/2 - roadBottomW/2, roadBottomY);
+  x.moveTo(W/2 + roadTopW/2, roadTopY); x.lineTo(W/2 + roadBottomW/2, roadBottomY);
+  x.stroke();
+  x.shadowBlur = 0;
+  
+  // Розмітка дороги
+  x.strokeStyle = 'rgba(255,255,255,0.4)';
+  x.lineWidth = 6;
+  for(let i=0; i<10; i++){
+    let z = (i * 100 - roadOffset) % 1000;
+    if(z < 0) z += 1000;
+    let p1 = z / 1000;
+    let p2 = (z + 50) / 1000;
+    
+    let y1 = horizon + (H - horizon) * p1;
+    let y2 = horizon + (H - horizon) * p2;
+    let w1 = roadTopW + (roadBottomW - roadTopW) * p1;
+    let w2 = roadTopW + (roadBottomW - roadTopW) * p2;
+    
+    // Центральна лінія
+    x.beginPath();
+    x.moveTo(W/2, y1); x.lineTo(W/2, y2);
+    x.stroke();
+  }
+  
+  // Проекція об'єктів
+  const project = (z, objX) => {
+    let p = 1 - (z / 1000);
+    let y = horizon + (H - horizon) * p;
+    let w = roadTopW + (roadBottomW - roadTopW) * p;
+    // objX від -W*0.35 до W*0.35, перетворюємо в координати екрану
+    let screenX = W/2 + (objX / (roadBottomW/2)) * (w/2) * 2; 
+    return {x: screenX, y: y, scale: p};
+  };
+  
+  // Сортування об'єктів за глибиною (Z)
+  let renderList = [];
+  for(let e of g.traffic) renderList.push({type:'traffic', data:e, z:e.z});
+  for(let c of g.coins) renderList.push({type:'coin', data:c, z:c.z});
+  renderList.sort((a,b)=>b.z - a.z);
+  
+  // Малювання трафіку та монет
+  for(let item of renderList) {
+    let p = project(item.z, item.data.x);
+    if(p.scale <= 0) continue;
+    
+    if(item.type === 'traffic') {
+      let carW = 160 * p.scale;
+      car3D(p.x, p.y - carW*0.8, carW, item.data.c, false, false);
+    } else if(item.type === 'coin') {
+      let size = 30 * p.scale;
+      x.fillStyle = '#ffd600';
+      x.shadowColor = '#ffd600';
+      x.shadowBlur = 10 * p.scale;
+      x.beginPath();
+      x.arc(p.x, p.y - size, size/2, 0, Math.PI*2);
+      x.fill();
+      x.shadowBlur = 0;
+    }
+  }
+  
+  // Ефекти швидкості
+  x.strokeStyle = 'rgba(255,255,255,0.2)';
+  x.lineWidth = 2;
+  for(let l of g.speedLines) {
+    x.beginPath();
+    x.moveTo(l.x, l.y);
+    x.lineTo(l.x, l.y + l.len);
+    x.stroke();
+  }
+  
+  // Частинки
+  for(let p of g.particles){
+    x.globalAlpha = Math.max(0, p.l/30);
+    x.fillStyle = p.c;
+    x.fillRect(p.x, p.y, 4, 4)
+  }
+  x.globalAlpha = 1;
+  
+  // Машина гравця (завжди знизу)
+  const playerW = W * 0.35;
+  const playerY = H * 0.85;
+  
+  if(!(g.inv&&Math.floor(g.inv/6)%2)){
+    if(boost){
+      x.fillStyle = '#ff9100';
+      x.shadowColor = '#ff9100';
+      x.shadowBlur = 30;
+      x.beginPath();
+      x.ellipse(W/2 + g.y, playerY + playerW*0.6, playerW*0.2, playerW*0.4, 0, 0, Math.PI*2);
+      x.fill();
+      x.shadowBlur = 0;
+    }
+    car3D(W/2 + g.y, playerY, playerW, g.car.c, true, true);
+  }
+  
+  // HUD Текст
+  x.fillStyle = '#fff';
+  x.font = '900 20px system-ui';
+  x.textAlign = 'left';
+  x.fillText('📏 '+Math.floor(g.dist)+' м', 20, 40);
+  
+  x.textAlign = 'center';
+  x.fillText('🪙 '+g.coinCount, W/2, 40);
+  
+  if(g.m.t){
+    x.textAlign = 'right';
+    x.fillStyle = g.time < 10 ? '#ff3d81' : '#fff';
+    x.fillText('⏱ '+Math.max(0,Math.ceil(g.time)), W-80, 40);
+  }
+  
+  // Спідометр (Спрощений)
+  const spd = Math.round(g.v);
+  x.textAlign = 'center';
+  x.font = '900 48px system-ui';
+  x.fillStyle = '#fff';
+  x.shadowColor = '#00e5ff';
+  x.shadowBlur = 15;
+  x.fillText(spd, W - 80, H - 40);
+  x.font = '900 16px system-ui';
+  x.fillStyle = '#00e5ff';
+  x.fillText('КМ/Г', W - 80, H - 20);
+  x.shadowBlur = 0;
+  
+  // Нітро-бар
+  x.fillStyle = 'rgba(255,255,255,.2)';
+  x.fillRect(W/2-100, H-15, 200, 8);
+  x.fillStyle = '#ff9100';
+  x.fillRect(W/2-100, H-15, 200*g.nit/100, 8);
+  
+  if(g.v<1&&g.dist<5){
+    x.fillStyle = '#00e5ff';
+    x.font = '900 30px system-ui';
+    x.fillText('ТИСНИ НА ГАЗ →', W/2, H*0.5);
+  }
+}
+
+// --- ОНОВЛЕННЯ ---
 let upu='';
-async function chk(){if(!BUILD)return;try{const r=await fetch('https://api.github.com/repos/olh5242/nichni-gonky/releases/latest'),j=await r.json(),n=parseInt((j.tag_name||'').slice(1));
-if(n>BUILD&&j.assets&&j.assets[0]){upu=j.assets[0].browser_download_url;$('um').textContent='Нова версія '+n+' (у тебе '+BUILD+')';show('upd')}}catch(e){}}
-$('u1').onclick=()=>{try{const B=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Browser;if(B)B.open({url:upu});else window.open(upu,'_blank')}catch(e){window.open(upu,'_blank')}};
+async function chk(){
+  if(!BUILD)return;
+  try{
+    const r=await fetch('https://api.github.com/repos/olh5242/nichni-gonky/releases/latest'),
+    j=await r.json(),
+    n=parseInt((j.tag_name||'').slice(1));
+    if(n>BUILD&&j.assets&&j.assets[0]){
+      upu=j.assets[0].browser_download_url;
+      $('um').textContent='Нова версія '+n+' (у тебе '+BUILD+')';
+      show('upd')
+    }
+  }catch(e){}
+}
+$('u1').onclick=()=>{
+  try{
+    const B=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Browser;
+    if(B)B.open({url:upu});
+    else window.open(upu,'_blank')
+  }catch(e){window.open(upu,'_blank')}
+};
 $('u2').onclick=lobby;
-tog();setTimeout(()=>{lobby();chk()},2500);
+
+tog();
+setTimeout(()=>{lobby();chk()},2500);
 </script></body></html>
