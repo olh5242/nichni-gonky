@@ -38,15 +38,12 @@ h2{margin:0;font-size:24px;text-shadow:0 0 10px var(--ac2)}
 #gear{position:fixed;left:calc(env(safe-area-inset-left,0px) + 20px);top:50%;display:flex;flex-direction:column;align-items:center;gap:10px;transform:translateY(-50%);pointer-events:auto}
 #gear button{position:static!important;width:60px;height:50px;border-radius:15px;font-size:22px}
 #gn{font:900 36px system-ui;width:60px;text-align:center;color:var(--ac);background:rgba(0,0,0,.6);border:2px solid var(--ac);border-radius:15px;padding:8px 0;box-shadow:0 0 15px var(--ac)}
-
-/* Стилі для гаража */
 .garage-item{display:flex;justify-content:space-between;align-items:center;width:min(400px,90%);background:rgba(255,255,255,0.05);padding:15px;border-radius:15px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.1)}
 .garage-item span{font-weight:bold;font-size:16px}
 .garage-item small{display:block;opacity:0.7;font-size:12px}
 </style></head><body>
 <canvas id="c"></canvas>
 
-<!-- HUD -->
 <div id="hud">
   <button id="pb">⏸</button>
   <div id="gear"><button id="gu">▲</button><div id="gn">1</div><button id="gd">▼</button></div>
@@ -56,7 +53,6 @@ h2{margin:0;font-size:24px;text-shadow:0 0 10px var(--ac2)}
   <button class="ped" id="gs">ГАЗ</button>
 </div>
 
-<!-- Меню -->
 <div class="s on" id="splash"><div id="sp">DEV VLAD</div></div>
 <div class="s" id="lobby"><h1>НІЧНІ ГОНКИ</h1><div class="st"><span id="lc"></span><span id="lb"></span></div>
 <button class="b" id="bp">▶ ГРАТИ</button>
@@ -66,16 +62,11 @@ h2{margin:0;font-size:24px;text-shadow:0 0 10px var(--ac2)}
 <div class="s" id="sel"><h2>ОБЕРИ РЕЖИМ ТА МАШИНУ</h2><div class="row" id="modes"></div><div class="row" id="cars"></div><div class="cap" id="sc"></div>
 <div class="row" style="margin-top:10px"><button class="b g" id="sb" style="min-width:120px">← НАЗАД</button><button class="b" id="sg">🏁 СТАРТ</button></div></div>
 
-<!-- Гараж -->
 <div class="s" id="garage">
   <h2>🔧 ГАРАЖ</h2>
   <div class="cap" id="gc"></div>
   <div class="row" style="margin-bottom:20px" id="garageCars"></div>
-  
-  <div id="upgradesList" style="width:100%;display:flex;flex-direction:column;align-items:center;">
-    <!-- Сюди генеруються кнопки покращень -->
-  </div>
-  
+  <div id="upgradesList" style="width:100%;display:flex;flex-direction:column;align-items:center;"></div>
   <button class="b" id="gb" style="margin-top:20px">← НАЗАД</button>
 </div>
 
@@ -90,12 +81,15 @@ h2{margin:0;font-size:24px;text-shadow:0 0 10px var(--ac2)}
 <div class="s" id="res"><h1 id="rt"></h1><div class="st" id="rx" style="flex-direction:column;text-align:center;line-height:1.8"></div><button class="b" id="r1" style="margin-top:20px"></button><button class="b g" id="r2">В ЛОБІ</button></div>
 
 <script>
-const BUILD=2; // Оновлено для перевірки оновлень
+// ЖОРСТКО ЗАФІКСОВАНИЙ РЕПОЗИТОРІЙ
+const REPO_OWNER = 'olh5242';
+const REPO_NAME = 'nichni-gonky';
+const BUILD = 3; 
+
 const $=i=>document.getElementById(i),cv=$('c'),x=cv.getContext('2d');
 let W,H,horizon,g=null,last=0,gas=0,brk=0,nit=0,stc=0,ac,rcb;
 let roadOffset=0;
 
-// Додано систему апгрейдів (0 - базовий рівень, 5 - максимальний)
 let S={coins:0,best:0,car:0,own:[0],mode:0,snd:1,fx:1,sens:5,auto:1, upgrades:{}};
 try{Object.assign(S,JSON.parse(localStorage.getItem('ng3')||'{}'))}catch(e){}
 const sv=()=>{try{localStorage.setItem('ng3',JSON.stringify(S))}catch(e){}};
@@ -107,18 +101,15 @@ const CARS=[
   {n:'Фантом',c:'#b388ff',sp:1.3,h:1.5,p:1500}
 ];
 const MODES=[{n:'Класика',d:'Їдь без кінця',t:0,m:1},{n:'На час',d:'60 с, монета +2 с',t:60,m:1},{n:'Хардкор',d:'Багато трафіку, ×2',t:0,m:2}];
-const GM=[0,55,100,150,205,260]; // Базові швидкості для передач
+const GM=[0,55,100,150,205,260];
 
-// Ініціалізація апгрейдів для машини, якщо їх немає
 function getUpg(carIdx) {
   if(!S.upgrades[carIdx]) S.upgrades[carIdx] = { engine: 0, handling: 0, nitro: 0 };
   return S.upgrades[carIdx];
 }
 
-// --- АУДІО ---
 function beep(f,d,t){if(!S.snd)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),v=ac.createGain();o.type=t||'square';o.frequency.value=f;v.gain.value=.05;v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(v);v.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
 
-// --- ЕКРАНИ ---
 function show(id){document.querySelectorAll('.s').forEach(s=>s.classList.remove('on'));if(id)$(id).classList.add('on');$('hud').style.display=id?'none':'block'}
 function lobby(){$('lc').textContent='🪙 '+S.coins;$('lb').textContent='🏆 '+S.best+' м';show('lobby')}
 
@@ -126,31 +117,25 @@ function rend(){
   $('modes').innerHTML=MODES.map((m,i)=>`<div class="k ${i==S.mode?'sel':''}" onclick="S.mode=${i};sv();rend()"><b>${m.n}</b><small>${m.d}</small></div>`).join('');
   $('cars').innerHTML=CARS.map((c,i)=>{
     let upg = getUpg(i);
-    let hp = Math.round(150 * c.sp + upg.engine * 40); // Розрахунок кінських сил
+    let hp = Math.round(150 * c.sp + upg.engine * 40);
     return `<div class="k ${i==S.car?'sel':''}" onclick="pick(${i})"><i style="background:${c.c}"></i><b>${c.n}</b><small>${S.own.includes(i)? hp + ' HP':'🔒 '+c.p+' 🪙'}</small></div>`
   }).join('');
   $('sc').textContent='🪙 '+S.coins;
 }
-
 function pick(i){if(S.own.includes(i))S.car=i;else if(S.coins>=CARS[i].p){S.coins-=CARS[i].p;S.own.push(i);S.car=i;beep(900,.2)}else beep(150,.3,'sawtooth');sv();rend()}
 
-// --- ГАРАЖ ---
 function renderGarage() {
   $('gc').textContent = '🪙 ' + S.coins;
-  
-  // Вибір машини в гаражі
   $('garageCars').innerHTML = CARS.map((c,i)=>{
     if(!S.own.includes(i)) return '';
     return `<div class="k ${i==S.car?'sel':''}" onclick="S.car=${i};sv();renderGarage()"><i style="background:${c.c}"></i><b>${c.n}</b></div>`
   }).join('');
 
   let upg = getUpg(S.car);
-  let carBase = CARS[S.car];
-  
   const upgConfig = [
-    { id: 'engine', name: 'Двигун', desc: 'Макс. швидкість', baseCost: 100, step: 5, level: upg.engine },
-    { id: 'handling', name: 'Керування', desc: 'Швидкість реакції', baseCost: 80, step: 4, level: upg.handling },
-    { id: 'nitro', name: 'Нітро', desc: 'Потужність та бак', baseCost: 120, step: 5, level: upg.nitro }
+    { id: 'engine', name: 'Двигун', desc: 'Макс. швидкість', baseCost: 100, level: upg.engine },
+    { id: 'handling', name: 'Керування', desc: 'Швидкість реакції', baseCost: 80, level: upg.handling },
+    { id: 'nitro', name: 'Нітро', desc: 'Потужність та бак', baseCost: 120, level: upg.nitro }
   ];
 
   $('upgradesList').innerHTML = upgConfig.map(cfg => {
@@ -169,25 +154,15 @@ function renderGarage() {
     `;
   }).join('');
 }
-
 function buyUpg(type, cost) {
   let upg = getUpg(S.car);
   if(upg[type] >= 5) return;
-  if(S.coins >= cost) {
-    S.coins -= cost;
-    upg[type]++;
-    beep(800,.1);
-    sv();
-    renderGarage();
-  } else {
-    beep(150,.2,'sawtooth');
-  }
+  if(S.coins >= cost) { S.coins -= cost; upg[type]++; beep(800,.1); sv(); renderGarage(); } 
+  else { beep(150,.2,'sawtooth'); }
 }
 
-// --- НАЛАШТУВАННЯ ---
 function tog(){$('t0').textContent=S.auto?'АВТОМАТ':'МЕХАНІКА';$('t1').textContent=S.snd?'УВІМК':'ВИМК';$('t2').textContent=S.fx?'УВІМК':'ВИМК';$('t3').value=S.sens}
 
-// --- КАНВАС ТА РОЗМІРИ ---
 function rs(){
   const d=devicePixelRatio||1;
   W=innerWidth;H=innerHeight;
@@ -197,7 +172,6 @@ function rs(){
 }
 addEventListener('resize',rs);rs();
 
-// --- КЕРУВАННЯ ---
 function hold(id,on,off){
   const e=$(id);
   e.addEventListener('pointerdown',v=>{v.preventDefault();e.classList.add('on');on()});
@@ -240,28 +214,19 @@ function res(t,s,b,f){
   gas=brk=nit=stc=0;show('res')
 }
 
-// --- ЛОГІКА ГРИ ---
 function start(){
   const m=MODES[S.mode];
   gas=brk=nit=stc=0;roadOffset=0;
-  
-  // Застосування апгрейдів до характеристик
   let upg = getUpg(S.car);
   let baseCar = CARS[S.car];
-  
-  // Кожен рівень двигуна +2% до швидкості
   let finalSp = baseCar.sp * (1 + upg.engine * 0.02);
-  // Кожен рівень керування +4% до маневреності
   let finalH = baseCar.h * (1 + upg.handling * 0.04);
   
   g={
     y:0, v:0, rpm:.15, gear:1, sc:0, 
     traffic:[], coins:[], particles:[], speedLines:[], 
     dist:0, time:m.t, coinCount:0, nit:100, inv:0, st:200, 
-    run:1, 
-    car: { c: baseCar.c, sp: finalSp, h: finalH }, 
-    upg: upg,
-    m, hard:S.mode==2
+    run:1, car: { c: baseCar.c, sp: finalSp, h: finalH }, upg: upg, m, hard:S.mode==2
   };
   show(null);last=performance.now();requestAnimationFrame(loop)
 }
@@ -283,12 +248,9 @@ function loop(now){
   if(!g||!g.run)return;
   const dt=Math.min(2.5,(now-last)/16.7);last=now;
   
-  // Фізика
   const cs=g.car.sp;
   const boost=nit&&g.nit>0&&g.gear>0;
   g.nit=boost?g.nit-.8*dt:Math.min(100,g.nit+.2*dt);
-  
-  // Нітро апгрейд збільшує потужність (додає +2 км/г за рівень)
   const nitroPush = 40 + (g.upg.nitro * 2);
   
   const gm=GM[g.gear]*cs;
@@ -301,18 +263,15 @@ function loop(now){
   g.v-=((.02+g.v*.0007)+(brk?1.8:0)+(g.gear&&g.v>gm+(boost?nitroPush:0)?.6:0))*dt;
   g.v=Math.max(0,g.v);
   
-  // Автоматична коробка
   g.sc-=dt;
   if(S.auto&&g.sc<=0){
     if(gas&&g.gear<5&&g.rpm>.88){g.gear++;g.sc=25;beep(300,.06)}
     else if(g.gear>1&&g.v<GM[g.gear-1]*cs*.65){g.gear--;g.sc=25}
   }
   
-  // Рух по дорозі
   g.dist+=g.v/3.6*dt/60;
   roadOffset = (roadOffset + g.v * dt * 0.5) % 100;
   
-  // Керування (з урахуванням апгрейду керма)
   const maxShift = W * 0.35;
   g.y += stc * maxShift * 0.05 * g.car.h * (S.sens/5) * Math.min(1,.35+g.v/60) * dt;
   g.y = Math.max(-maxShift, Math.min(maxShift, g.y));
@@ -320,22 +279,16 @@ function loop(now){
   g.inv=Math.max(0,g.inv-dt);
   if(g.m.t&&g.v>0){g.time-=dt/60;if(g.time<=0){end();return}}
   
-  // Спавн трафіку та монет
   g.st-=g.v*dt*0.1;
   if(g.st<=0 && g.v>5){
     const lanes = [-maxShift*0.6, 0, maxShift*0.6];
     const lane = lanes[Math.random()*lanes.length|0];
-    
     g.traffic.push({ z: 1000, x: lane, c: ['#e53935','#43a047','#8e24aa','#039be5','#fdd835','#fb8c00'][Math.random()*6|0] });
     if(g.hard && Math.random()<0.5) g.traffic.push({ z: 1000, x: lanes[Math.random()*lanes.length|0], c: '#e53935' });
-    
-    if(Math.random()<0.6) {
-      g.coins.push({ z: 1000, x: lane + rr(-40,40) });
-    }
+    if(Math.random()<0.6) g.coins.push({ z: 1000, x: lane + rr(-40,40) });
     g.st = Math.max(60, rr(200,350) * (g.hard?.6:1) / (1 + g.dist/4000));
   }
   
-  // Оновлення трафіку
   for(let i=g.traffic.length-1; i>=0; i--){
     let e = g.traffic[i];
     e.z -= (g.v * 1.5) * dt;
@@ -349,7 +302,6 @@ function loop(now){
     if(e.z < -100) g.traffic.splice(i,1);
   }
   
-  // Оновлення монет
   for(let i=g.coins.length-1; i>=0; i--){
     let c = g.coins[i];
     c.z -= (g.v * 1.5) * dt;
@@ -362,11 +314,8 @@ function loop(now){
     if(c.z < -100) g.coins.splice(i,1);
   }
   
-  // Ефекти швидкості
   if(S.fx && g.v > 30){
-    if(Math.random() < 0.5) {
-      g.speedLines.push({x: rr(0, W), y: rr(0, H), len: rr(20, 100), sp: g.v});
-    }
+    if(Math.random() < 0.5) g.speedLines.push({x: rr(0, W), y: rr(0, H), len: rr(20, 100), sp: g.v});
   }
   for(let i=g.speedLines.length-1; i>=0; i--){
     g.speedLines[i].y += (g.v * 2) * dt;
@@ -381,115 +330,63 @@ function loop(now){
 
   $('gn').textContent=g.gear?g.gear:'N';
   $('gu').style.opacity=$('gd').style.opacity=S.auto?.35:1;
-  
   draw(boost);
   requestAnimationFrame(loop)
 }
 
-// --- МАЛЮВАННЯ (PSEUDO-3D) ---
 function car3D(cx, cy, width, col, isPlayer, glow) {
   const h = width * 1.5;
   const w = width;
-  
   x.save();
-  if(glow){
-    x.shadowColor = col;
-    x.shadowBlur = 20;
-  }
-  
+  if(glow){ x.shadowColor = col; x.shadowBlur = 20; }
   x.fillStyle = 'rgba(0,0,0,0.6)';
-  x.beginPath();
-  x.ellipse(cx, cy + h/2, w*0.6, h*0.15, 0, 0, Math.PI*2);
-  x.fill();
-  
-  x.fillStyle = col;
-  x.beginPath();
-  x.roundRect(cx - w/2, cy - h/2, w, h, w*0.15);
-  x.fill();
-  
-  x.fillStyle = 'rgba(10,15,25,0.9)';
-  x.beginPath();
-  x.roundRect(cx - w*0.4, cy - h*0.4, w*0.8, h*0.4, w*0.1);
-  x.fill();
-  
-  x.fillStyle = '#ff0000';
-  x.shadowColor = '#ff0000';
-  x.shadowBlur = 15;
-  x.fillRect(cx - w*0.4, cy + h*0.25, w*0.2, h*0.1);
-  x.fillRect(cx + w*0.2, cy + h*0.25, w*0.2, h*0.1);
-  
-  if(isPlayer) {
-    x.fillStyle = '#fff';
-    x.font = `900 ${w*0.2}px system-ui`;
-    x.textAlign = 'center';
-    x.fillText('777', cx, cy + h*0.15);
-  }
-  
-  x.fillStyle = '#111';
-  x.fillRect(cx - w*0.55, cy - h*0.3, w*0.1, h*0.3);
-  x.fillRect(cx + w*0.45, cy - h*0.3, w*0.1, h*0.3);
-  
+  x.beginPath(); x.ellipse(cx, cy + h/2, w*0.6, h*0.15, 0, 0, Math.PI*2); x.fill();
+  x.fillStyle = col; x.beginPath(); x.roundRect(cx - w/2, cy - h/2, w, h, w*0.15); x.fill();
+  x.fillStyle = 'rgba(10,15,25,0.9)'; x.beginPath(); x.roundRect(cx - w*0.4, cy - h*0.4, w*0.8, h*0.4, w*0.1); x.fill();
+  x.fillStyle = '#ff0000'; x.shadowColor = '#ff0000'; x.shadowBlur = 15;
+  x.fillRect(cx - w*0.4, cy + h*0.25, w*0.2, h*0.1); x.fillRect(cx + w*0.2, cy + h*0.25, w*0.2, h*0.1);
+  if(isPlayer) { x.fillStyle = '#fff'; x.font = `900 ${w*0.2}px system-ui`; x.textAlign = 'center'; x.fillText('777', cx, cy + h*0.15); }
+  x.fillStyle = '#111'; x.fillRect(cx - w*0.55, cy - h*0.3, w*0.1, h*0.3); x.fillRect(cx + w*0.45, cy - h*0.3, w*0.1, h*0.3);
   x.restore();
 }
 
 function draw(boost){
   let skyGrad = x.createLinearGradient(0, 0, 0, horizon);
-  skyGrad.addColorStop(0, '#050510');
-  skyGrad.addColorStop(1, '#1a103c');
-  x.fillStyle = skyGrad;
-  x.fillRect(0, 0, W, horizon);
+  skyGrad.addColorStop(0, '#050510'); skyGrad.addColorStop(1, '#1a103c');
+  x.fillStyle = skyGrad; x.fillRect(0, 0, W, horizon);
   
   x.fillStyle = '#0a0a1a';
   for(let i=0; i<15; i++){
-    let bw = W/10;
-    let bh = 50 + Math.sin(i*13)*40;
+    let bw = W/10; let bh = 50 + Math.sin(i*13)*40;
     x.fillRect(i*bw - (roadOffset*0.1)%bw, horizon - bh, bw-2, bh);
-    x.fillStyle = 'rgba(0, 229, 255, 0.2)';
-    x.fillRect(i*bw + 10 - (roadOffset*0.1)%bw, horizon - bh + 10, 5, 5);
+    x.fillStyle = 'rgba(0, 229, 255, 0.2)'; x.fillRect(i*bw + 10 - (roadOffset*0.1)%bw, horizon - bh + 10, 5, 5);
     x.fillStyle = '#0a0a1a';
   }
   
-  x.fillStyle = '#05050f';
-  x.fillRect(0, horizon, W, H - horizon);
+  x.fillStyle = '#05050f'; x.fillRect(0, horizon, W, H - horizon);
   
-  const roadBottomW = W * 1.5;
-  const roadTopW = W * 0.1;
-  const roadBottomY = H;
-  const roadTopY = horizon;
+  const roadBottomW = W * 1.5; const roadTopW = W * 0.1;
+  const roadBottomY = H; const roadTopY = horizon;
   
   x.fillStyle = '#151520';
   x.beginPath();
-  x.moveTo(W/2 - roadTopW/2, roadTopY);
-  x.lineTo(W/2 + roadTopW/2, roadTopY);
-  x.lineTo(W/2 + roadBottomW/2, roadBottomY);
-  x.lineTo(W/2 - roadBottomW/2, roadBottomY);
-  x.closePath();
-  x.fill();
+  x.moveTo(W/2 - roadTopW/2, roadTopY); x.lineTo(W/2 + roadTopW/2, roadTopY);
+  x.lineTo(W/2 + roadBottomW/2, roadBottomY); x.lineTo(W/2 - roadBottomW/2, roadBottomY);
+  x.closePath(); x.fill();
   
-  x.strokeStyle = '#00e5ff';
-  x.lineWidth = 4;
-  x.shadowColor = '#00e5ff';
-  x.shadowBlur = 15;
+  x.strokeStyle = '#00e5ff'; x.lineWidth = 4; x.shadowColor = '#00e5ff'; x.shadowBlur = 15;
   x.beginPath();
   x.moveTo(W/2 - roadTopW/2, roadTopY); x.lineTo(W/2 - roadBottomW/2, roadBottomY);
   x.moveTo(W/2 + roadTopW/2, roadTopY); x.lineTo(W/2 + roadBottomW/2, roadBottomY);
-  x.stroke();
-  x.shadowBlur = 0;
+  x.stroke(); x.shadowBlur = 0;
   
-  x.strokeStyle = 'rgba(255,255,255,0.4)';
-  x.lineWidth = 6;
+  x.strokeStyle = 'rgba(255,255,255,0.4)'; x.lineWidth = 6;
   for(let i=0; i<10; i++){
     let z = (i * 100 - roadOffset) % 1000;
     if(z < 0) z += 1000;
-    let p1 = z / 1000;
-    let p2 = (z + 50) / 1000;
-    
-    let y1 = horizon + (H - horizon) * p1;
-    let y2 = horizon + (H - horizon) * p2;
-    
-    x.beginPath();
-    x.moveTo(W/2, y1); x.lineTo(W/2, y2);
-    x.stroke();
+    let p1 = z / 1000; let p2 = (z + 50) / 1000;
+    let y1 = horizon + (H - horizon) * p1; let y2 = horizon + (H - horizon) * p2;
+    x.beginPath(); x.moveTo(W/2, y1); x.lineTo(W/2, y2); x.stroke();
   }
   
   const project = (z, objX) => {
@@ -508,116 +405,79 @@ function draw(boost){
   for(let item of renderList) {
     let p = project(item.z, item.data.x);
     if(p.scale <= 0) continue;
-    
     if(item.type === 'traffic') {
       let carW = 160 * p.scale;
       car3D(p.x, p.y - carW*0.8, carW, item.data.c, false, false);
     } else if(item.type === 'coin') {
       let size = 30 * p.scale;
-      x.fillStyle = '#ffd600';
-      x.shadowColor = '#ffd600';
-      x.shadowBlur = 10 * p.scale;
-      x.beginPath();
-      x.arc(p.x, p.y - size, size/2, 0, Math.PI*2);
-      x.fill();
-      x.shadowBlur = 0;
+      x.fillStyle = '#ffd600'; x.shadowColor = '#ffd600'; x.shadowBlur = 10 * p.scale;
+      x.beginPath(); x.arc(p.x, p.y - size, size/2, 0, Math.PI*2); x.fill(); x.shadowBlur = 0;
     }
   }
   
-  x.strokeStyle = 'rgba(255,255,255,0.2)';
-  x.lineWidth = 2;
-  for(let l of g.speedLines) {
-    x.beginPath();
-    x.moveTo(l.x, l.y);
-    x.lineTo(l.x, l.y + l.len);
-    x.stroke();
-  }
+  x.strokeStyle = 'rgba(255,255,255,0.2)'; x.lineWidth = 2;
+  for(let l of g.speedLines) { x.beginPath(); x.moveTo(l.x, l.y); x.lineTo(l.x, l.y + l.len); x.stroke(); }
   
-  for(let p of g.particles){
-    x.globalAlpha = Math.max(0, p.l/30);
-    x.fillStyle = p.c;
-    x.fillRect(p.x, p.y, 4, 4)
-  }
+  for(let p of g.particles){ x.globalAlpha = Math.max(0, p.l/30); x.fillStyle = p.c; x.fillRect(p.x, p.y, 4, 4) }
   x.globalAlpha = 1;
   
-  const playerW = W * 0.35;
-  const playerY = H * 0.85;
-  
+  const playerW = W * 0.35; const playerY = H * 0.85;
   if(!(g.inv&&Math.floor(g.inv/6)%2)){
     if(boost){
-      x.fillStyle = '#ff9100';
-      x.shadowColor = '#ff9100';
-      x.shadowBlur = 30;
-      x.beginPath();
-      x.ellipse(W/2 + g.y, playerY + playerW*0.6, playerW*0.2, playerW*0.4, 0, 0, Math.PI*2);
-      x.fill();
-      x.shadowBlur = 0;
+      x.fillStyle = '#ff9100'; x.shadowColor = '#ff9100'; x.shadowBlur = 30;
+      x.beginPath(); x.ellipse(W/2 + g.y, playerY + playerW*0.6, playerW*0.2, playerW*0.4, 0, 0, Math.PI*2); x.fill(); x.shadowBlur = 0;
     }
     car3D(W/2 + g.y, playerY, playerW, g.car.c, true, true);
   }
   
-  x.fillStyle = '#fff';
-  x.font = '900 20px system-ui';
-  x.textAlign = 'left';
+  x.fillStyle = '#fff'; x.font = '900 20px system-ui'; x.textAlign = 'left';
   x.fillText('📏 '+Math.floor(g.dist)+' м', 20, 40);
-  
-  x.textAlign = 'center';
-  x.fillText('🪙 '+g.coinCount, W/2, 40);
-  
-  if(g.m.t){
-    x.textAlign = 'right';
-    x.fillStyle = g.time < 10 ? '#ff3d81' : '#fff';
-    x.fillText('⏱ '+Math.max(0,Math.ceil(g.time)), W-80, 40);
-  }
+  x.textAlign = 'center'; x.fillText('🪙 '+g.coinCount, W/2, 40);
+  if(g.m.t){ x.textAlign = 'right'; x.fillStyle = g.time < 10 ? '#ff3d81' : '#fff'; x.fillText('⏱ '+Math.max(0,Math.ceil(g.time)), W-80, 40); }
   
   const spd = Math.round(g.v);
-  x.textAlign = 'center';
-  x.font = '900 48px system-ui';
-  x.fillStyle = '#fff';
-  x.shadowColor = '#00e5ff';
-  x.shadowBlur = 15;
+  x.textAlign = 'center'; x.font = '900 48px system-ui'; x.fillStyle = '#fff'; x.shadowColor = '#00e5ff'; x.shadowBlur = 15;
   x.fillText(spd, W - 80, H - 40);
-  x.font = '900 16px system-ui';
-  x.fillStyle = '#00e5ff';
-  x.fillText('КМ/Г', W - 80, H - 20);
-  x.shadowBlur = 0;
+  x.font = '900 16px system-ui'; x.fillStyle = '#00e5ff'; x.fillText('КМ/Г', W - 80, H - 20); x.shadowBlur = 0;
   
-  x.fillStyle = 'rgba(255,255,255,.2)';
-  x.fillRect(W/2-100, H-15, 200, 8);
-  x.fillStyle = '#ff9100';
-  x.fillRect(W/2-100, H-15, 200*g.nit/100, 8);
+  x.fillStyle = 'rgba(255,255,255,.2)'; x.fillRect(W/2-100, H-15, 200, 8);
+  x.fillStyle = '#ff9100'; x.fillRect(W/2-100, H-15, 200*g.nit/100, 8);
   
-  if(g.v<1&&g.dist<5){
-    x.fillStyle = '#00e5ff';
-    x.font = '900 30px system-ui';
-    x.fillText('ТИСНИ НА ГАЗ →', W/2, H*0.5);
-  }
+  if(g.v<1&&g.dist<5){ x.fillStyle = '#00e5ff'; x.font = '900 30px system-ui'; x.fillText('ТИСНИ НА ГАЗ →', W/2, H*0.5); }
 }
 
-// --- ОНОВЛЕННЯ ---
+// --- ОНОВЛЕННЯ (ЖОРСТКЕ ПОСИЛАННЯ) ---
 let upu='';
 async function chk(){
-  if(!BUILD)return;
   try{
-    const r=await fetch('https://api.github.com/repos/olh5242/nichni-gonky/releases/latest'),
-    j=await r.json(),
-    n=parseInt((j.tag_name||'').slice(1));
-    if(n>BUILD&&j.assets&&j.assets[0]){
-      upu=j.assets[0].browser_download_url;
-      $('um').textContent='Нова версія '+n+' (у тебе '+BUILD+')';
-      show('upd')
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
+    const r = await fetch(url);
+    const j = await r.json();
+    let tag = j.tag_name || '';
+    // Витягуємо номер версії (наприклад, з "v3" робимо 3)
+    let n = parseInt(tag.replace(/[^0-9]/g, ''));
+    
+    if(n > BUILD && j.assets && j.assets.length > 0){
+      // Шукаємо файл .apk серед assets
+      let apkAsset = j.assets.find(a => a.name.endsWith('.apk'));
+      if(!apkAsset) apkAsset = j.assets[0]; // Якщо не знайшли за розширенням, беремо перший
+      
+      upu = apkAsset.browser_download_url;
+      $('um').textContent = 'Доступна версія ' + n + ' (у вас ' + BUILD + ')';
+      show('upd');
     }
-  }catch(e){}
+  }catch(e){ console.log('Помилка перевірки оновлень:', e); }
 }
+
 $('u1').onclick=()=>{
   try{
     const B=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Browser;
-    if(B)B.open({url:upu});
-    else window.open(upu,'_blank')
-  }catch(e){window.open(upu,'_blank')}
+    if(B) B.open({url:upu});
+    else window.open(upu,'_blank');
+  }catch(e){ window.open(upu,'_blank'); }
 };
 $('u2').onclick=lobby;
 
 tog();
-setTimeout(()=>{lobby();chk()},2500);
+setTimeout(()=>{lobby();chk()}, 2000); // Перевірка через 2 секунди після запуску
 </script></body></html>
