@@ -1,393 +1,695 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Трактор в болоте</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #18271d;
-      color: white;
-      font-family: system-ui, sans-serif;
-      touch-action: none;
-    }
-    canvas { display: block; width: 100vw; height: 100dvh; }
-    #hud {
-      position: fixed;
-      top: 14px;
-      left: 14px;
-      z-index: 2;
-      padding: 10px 14px;
-      border: 1px solid #ffffff33;
-      border-radius: 14px;
-      background: #101a16bb;
-      font-weight: 700;
-      line-height: 1.5;
-    }
-    #controls {
-      position: fixed;
-      bottom: 20px;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-between;
-      padding: 0 20px;
-      z-index: 2;
-    }
-    .group { display: flex; gap: 12px; }
-    button {
-      width: 66px;
-      height: 66px;
-      border: 2px solid #ffffff88;
-      border-radius: 20px;
-      background: #17241ddd;
-      color: white;
-      font-size: 26px;
-      font-weight: 800;
-      touch-action: none;
-      user-select: none;
-    }
-    button:active { background: #779632; transform: scale(.96); }
-    #gas { background: #6b8c2cdd; }
-    #message {
-      position: fixed;
-      inset: 0;
-      z-index: 3;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: #101a16aa;
-      text-align: center;
-    }
-    #card {
-      max-width: 360px;
-      padding: 26px;
-      border: 1px solid #ffffff44;
-      border-radius: 24px;
-      background: #1b2b20;
-      box-shadow: 0 12px 50px #0008;
-    }
-    #card h1 { margin: 0 0 10px; font-size: 30px; }
-    #card p { color: #d3dfd1; line-height: 1.5; }
-    #start {
-      width: auto;
-      height: auto;
-      padding: 13px 24px;
-      border: 0;
-      background: #83a93b;
-      font-size: 18px;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Нічні Гонки: NEON EDITION</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --neon-blue: #00e5ff;
+  --neon-pink: #ff3d81;
+  --neon-yellow: #ffd600;
+  --bg-dark: #050510;
+  --glass-bg: rgba(20, 25, 40, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Montserrat', sans-serif; }
+body { margin: 0; background: var(--bg-dark); color: #fff; overflow: hidden; touch-action: none; user-select: none; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
+
+/* --- ЕКРАНИ --- */
+.screen {
+  position: fixed; inset: 0; z-index: 10;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, rgba(10, 15, 30, 0.4), rgba(5, 5, 16, 0.95));
+  backdrop-filter: blur(8px);
+  transition: opacity 0.4s ease;
+}
+.screen.active { display: flex; animation: fadeIn 0.4s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+/* --- ЛОББІ --- */
+.logo {
+  font-size: clamp(40px, 10vw, 80px); font-weight: 900; letter-spacing: 5px;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+  -webkit-background-clip: text; color: transparent;
+  text-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
+  margin-bottom: 5px; text-align: center;
+}
+.subtitle { color: rgba(255,255,255,0.6); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 30px; font-size: 14px; }
+
+.profile-card {
+  display: flex; align-items: center; gap: 15px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  padding: 15px 25px; border-radius: 20px; margin-bottom: 30px;
+  backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  width: min(400px, 90vw);
+}
+.avatar {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue));
+  display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;
+}
+.player-info { flex: 1; }
+.player-name { font-weight: 700; font-size: 18px; margin-bottom: 5px; }
+.xp-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+.xp-fill { height: 100%; background: var(--neon-blue); width: 0%; box-shadow: 0 0 10px var(--neon-blue); transition: width 0.3s; }
+
+.btn {
+  border: 0; border-radius: 12px; padding: 16px 30px; font-size: 16px; font-weight: 800;
+  color: #000; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+  transition: all 0.2s; width: min(320px, 80vw); margin-bottom: 12px;
+  background: linear-gradient(90deg, var(--neon-blue), #7cf);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 0 25px rgba(0, 229, 255, 0.7); }
+.btn:active { transform: scale(0.96); }
+.btn.secondary {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  color: #fff; box-shadow: none;
+}
+.btn.secondary:hover { background: rgba(255,255,255,0.1); }
+
+/* --- МОДАЛЬНІ ВІКНА --- */
+.modal {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  padding: 30px; border-radius: 24px; width: min(500px, 90vw);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.8); backdrop-filter: blur(20px);
+  text-align: center;
+}
+.modal h2 { margin-top: 0; color: var(--neon-blue); }
+.row-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-sm { width: auto; padding: 10px 20px; font-size: 14px; margin: 0; }
+
+/* --- HUD --- */
+#hud { display: none; pointer-events: none; z-index: 5; }
+#hud button { pointer-events: auto; border: 2px solid rgba(255,255,255,0.2); background: rgba(10,15,30,0.7); color: #fff; font-weight: 900; backdrop-filter: blur(6px); position: fixed; display: flex; align-items: center; justify-content: center; border-radius: 16px; transition: 0.2s; }
+#hud button:active { background: rgba(0, 229, 255, 0.5); border-color: var(--neon-blue); transform: scale(0.95); }
+#pb { top: 20px; right: 20px; width: 50px; height: 50px; font-size: 20px; }
+.pad { width: 90px; height: 90px; font-size: 32px; bottom: 30px; }
+#su { left: 30px; } #sd { left: 140px; }
+.ped { width: 100px; height: 110px; bottom: 30px; font-weight: 900; font-size: 16px; flex-direction: column; gap: 5px; }
+#gs { right: 30px; border-color: var(--neon-blue) !important; color: var(--neon-blue) !important; }
+#br { right: 140px; border-color: var(--neon-pink) !important; color: var(--neon-pink) !important; }
+#nb { right: 30px; bottom: 155px; width: 100px; height: 60px; border-radius: 30px; border-color: var(--neon-yellow) !important; color: var(--neon-yellow) !important; font-size: 14px; }
+#gear { position: fixed; left: 30px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
+#gear button { position: static !important; width: 50px; height: 50px; }
+#gn { background: rgba(0,0,0,0.8); border: 2px solid var(--neon-blue); text-align: center; font-size: 24px; font-weight: 900; padding: 5px; border-radius: 12px; color: var(--neon-blue); }
+
+/* Ефект сканування */
+.scanlines { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, transparent 1px, transparent 3px); }
+</style>
 </head>
 <body>
-  <canvas id="game"></canvas>
+<div class="scanlines"></div>
+<canvas id="c"></canvas>
 
-  <div id="hud">
-    🏁 Путь: <span id="score">0</span> м<br>
-    ❤️ Прочность: <span id="health">3</span>
+<!-- ГРА -->
+<div id="hud">
+  <button id="pb">⏸</button>
+  <div id="gear"><button id="gu">▲</button><div id="gn">1</div><button id="gd">▼</button></div>
+  <button class="pad" id="su">◄</button><button class="pad" id="sd">►</button>
+  <button id="nb">NITRO</button>
+  <button class="ped" id="br">ГАЛЬМА</button>
+  <button class="ped" id="gs">ГАЗ</button>
+</div>
+
+<!-- ЛОББІ -->
+<div class="screen active" id="scr-lobby">
+  <div class="logo">NEON RACER</div>
+  <div class="subtitle">Futuristic Midnight Racing</div>
+  
+  <div class="profile-card">
+    <div class="avatar" id="player-avatar">V</div>
+    <div class="player-info">
+      <div class="player-name" id="player-name">DEV VLAD</div>
+      <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+      <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px;">Рівень <span id="player-lvl">1</span> • XP: <span id="player-xp">0</span>/100</div>
+    </div>
   </div>
 
-  <div id="controls">
-    <div class="group">
-      <button data-control="left" aria-label="Влево">◀</button>
-      <button data-control="right" aria-label="Вправо">▶</button>
+  <button class="btn" id="btn-play">▶ ГРАТИ</button>
+  <button class="btn secondary" id="btn-daily">🎁 ЩОДЕННА НАГОРОДА</button>
+  <button class="btn secondary" id="btn-settings">⚙ НАЛАШТУВАННЯ</button>
+</div>
+
+<!-- ГАРАЖ -->
+<div class="screen" id="scr-garage">
+  <div class="modal">
+    <h2>🔧 ГАРАЖ</h2>
+    <div class="profile-card" style="padding: 10px; margin-bottom: 20px; width: 100%;">
+      <div style="width: 100%; text-align: center; color: var(--neon-yellow); font-weight: 900; font-size: 20px;">
+        🪙 <span id="garage-coins">0</span>
+      </div>
     </div>
-    <div class="group">
-      <button data-control="brake" aria-label="Тормоз">▼</button>
-      <button id="gas" data-control="gas" aria-label="Газ">▲</button>
-    </div>
+    <div class="row-btns" id="garage-cars" style="margin-bottom: 20px;"></div>
+    <div id="upgrades-list" style="text-align: left; margin-bottom: 20px;"></div>
+    <button class="btn" id="btn-garage-back">← НАЗАД</button>
   </div>
+</div>
 
-  <div id="message">
-    <div id="card">
-      <h1>🚜 Трактор в болоте</h1>
-      <p>Объезжай топкие ямы и брёвна. Не съезжай с тропы — у трактора всего три жизни!</p>
-      <button id="start">Поехали!</button>
+<!-- НАЛАШТУВАННЯ -->
+<div class="screen" id="scr-settings">
+  <div class="modal">
+    <h2>⚙ НАЛАШТУВАННЯ</h2>
+    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+      <span>Коробка передач</span>
+      <button class="btn btn-sm secondary" id="set-auto">АВТОМАТ</button>
     </div>
+    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+      <span>Звук</span>
+      <button class="btn btn-sm secondary" id="set-sound">УВІМК</button>
+    </div>
+    <div style="margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+      <span>Чутливість керма</span>
+      <input type="range" id="set-sens" min="1" max="10" style="width: 120px; accent-color: var(--neon-blue);">
+    </div>
+    <button class="btn secondary" id="btn-reset" style="color: var(--neon-pink); border-color: var(--neon-pink);">Скинути прогрес</button>
+    <button class="btn" id="btn-settings-back" style="margin-top: 15px;">← НАЗАД</button>
   </div>
+</div>
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    const scoreEl = document.getElementById("score");
-    const healthEl = document.getElementById("health");
-    const message = document.getElementById("message");
-    const startButton = document.getElementById("start");
+<!-- ВИБІР РЕЖИМУ -->
+<div class="screen" id="scr-mode">
+  <div class="modal">
+    <h2>ОБЕРИ РЕЖИМ</h2>
+    <div class="row-btns" id="mode-list" style="flex-direction: column; margin-bottom: 20px;"></div>
+    <button class="btn secondary" id="btn-mode-back">← НАЗАД</button>
+  </div>
+</div>
 
-    let W, H, dpr;
-    let running = false;
-    let distance = 0;
-    let speed = 100;
-    let health = 3;
-    let playerX = 0;
-    let steering = 0;
-    let nextObstacle = 450;
-    let obstacles = [];
-    let lastTime = 0;
-    let offRoadTime = 0;
-    let hitFlash = 0;
+<!-- РЕЗУЛЬТАТ -->
+<div class="screen" id="scr-result">
+  <div class="modal">
+    <h1 id="res-title" style="font-size: 40px; margin-bottom: 10px; text-shadow: 0 0 20px var(--neon-blue);">АВАРІЯ</h1>
+    <div style="font-size: 20px; line-height: 1.8; margin-bottom: 30px;">
+      <div>📏 Дистанція: <span id="res-dist">0</span> м</div>
+      <div>🪙 Монети: <span id="res-coins" style="color: var(--neon-yellow);">0</span></div>
+      <div id="res-record" style="color: var(--neon-blue); font-weight: 900; display: none;">🏆 НОВИЙ РЕКОРД!</div>
+    </div>
+    <button class="btn" id="btn-restart">↻ ЩЕ РАЗ</button>
+    <button class="btn secondary" id="btn-menu">В ЛОББІ</button>
+  </div>
+</div>
 
-    const held = { left: false, right: false, gas: false, brake: false };
-    const scale = 0.72;
+<!-- ЕКРАН ОНОВЛЕННЯ -->
+<div class="screen" id="scr-update">
+  <div class="modal">
+    <h1 style="color: var(--neon-pink);">⬆ ОНОВЛЕННЯ</h1>
+    <p id="upd-msg" style="margin-bottom: 20px;">Доступна нова версія!</p>
+    <button class="btn" id="btn-update">ЗАВАНТАЖИТИ</button>
+    <button class="btn secondary" id="btn-update-later">ПІЗНІШЕ</button>
+  </div>
+</div>
 
-    function resize() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = window.innerWidth;
-      H = window.innerHeight;
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (!running || !playerX) playerX = W / 2;
+<script>
+// --- КОНФІГУРАЦІЯ ТА СТАН ---
+const REPO_OWNER = 'olh5242';
+const REPO_NAME = 'nichni-gonky';
+const BUILD = 5; 
+
+let W, H, horizon, lastTime = 0, ac, reqID;
+let gameState = 'menu'; // menu, playing, paused, result
+let g = null;
+
+// Ініціалізація збережень
+let S = {
+  coins: 0, best: 0, car: 0, own: [0], mode: 0,
+  snd: 1, sens: 5, auto: 1, xp: 0, lvl: 1,
+  upgrades: {}, lastDaily: 0
+};
+try { 
+  const saved = JSON.parse(localStorage.getItem('ng_neon') || '{}');
+  Object.assign(S, saved); 
+} catch(e) {}
+
+const save = () => { try { localStorage.setItem('ng_neon', JSON.stringify(S)) } catch(e) {} };
+
+const CARS = [
+  { n: 'Спарк', c: '#00e5ff', sp: 1, h: 1, p: 0 },
+  { n: 'Фурія', c: '#ff3d81', sp: 1.08, h: 1.15, p: 300 },
+  { n: 'Тайфун', c: '#ffd600', sp: 1.18, h: 1.3, p: 800 },
+  { n: 'Фантом', c: '#b388ff', sp: 1.3, h: 1.5, p: 1500 }
+];
+const MODES = [
+  { n: 'Класика', d: 'Їдь без кінця', t: 0, m: 1 },
+  { n: 'На час', d: '60 с, монета +2 с', t: 60, m: 1 },
+  { n: 'Хардкор', d: 'Багато трафіку, ×2 монети', t: 0, m: 2 }
+];
+const GM = [0, 55, 100, 150, 205, 260];
+
+// --- УТИЛІТИ ---
+const $ = id => document.getElementById(id);
+const cv = $('c'), ctx = cv.getContext('2d');
+const rr = (min, max) => min + Math.random() * (max - min);
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  if (id) $(id).classList.add('active');
+  $('hud').style.display = id ? 'none' : 'block';
+}
+
+function updateProfileUI() {
+  $('player-lvl').textContent = S.lvl;
+  $('player-xp').textContent = S.xp;
+  const xpNeeded = S.lvl * 100;
+  $('xp-fill').style.width = Math.min(100, (S.xp / xpNeeded) * 100) + '%';
+}
+
+function addXP(amount) {
+  S.xp += amount;
+  let leveledUp = false;
+  while (S.xp >= S.lvl * 100) {
+    S.xp -= S.lvl * 100;
+    S.lvl++;
+    S.coins += 100; // Нагорода за рівень
+    leveledUp = true;
+  }
+  if (leveledUp) beep(1000, 0.5, 'sine');
+  save();
+  updateProfileUI();
+}
+
+function beep(f, d, type = 'square') {
+  if (!S.snd) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), v = ac.createGain();
+    o.type = type; o.frequency.value = f;
+    v.gain.value = 0.05; v.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d);
+    o.connect(v); v.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + d);
+  } catch(e) {}
+}
+
+// --- ЛОБІ ЛОГІКА ---
+function updateDailyBtn() {
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+  if (now - S.lastDaily > oneDay) {
+    $('btn-daily').textContent = '🎁 ЗАБРАТИ НАГОРОДУ';
+    $('btn-daily').style.color = 'var(--neon-yellow)';
+  } else {
+    $('btn-daily').textContent = '🎁 ВЖЕ ЗАБРАНО';
+    $('btn-daily').style.color = 'rgba(255,255,255,0.5)';
+  }
+}
+
+$('btn-daily').onclick = () => {
+  const now = Date.now();
+  if (now - S.lastDaily > 24 * 60 * 60 * 1000) {
+    S.coins += 250;
+    S.lastDaily = now;
+    save();
+    beep(1200, 0.3, 'sine');
+    updateDailyBtn();
+    alert('Ти отримав 250 монет!');
+  } else {
+    beep(150, 0.2);
+    alert('Приходь завтра!');
+  }
+};
+
+// --- ГАРАЖ ---
+function renderGarage() {
+  $('garage-coins').textContent = S.coins;
+  
+  $('garage-cars').innerHTML = CARS.map((c, i) => {
+    if (!S.own.includes(i)) return '';
+    return `<button class="btn btn-sm ${i === S.car ? '' : 'secondary'}" onclick="selectCar(${i})">${c.n}</button>`;
+  }).join('');
+
+  let upg = S.upgrades[S.car] || { engine: 0, handling: 0, nitro: 0 };
+  const upgConfig = [
+    { id: 'engine', name: 'Двигун', baseCost: 100, level: upg.engine },
+    { id: 'handling', name: 'Керування', baseCost: 80, level: upg.handling },
+    { id: 'nitro', name: 'Нітро', baseCost: 120, level: upg.nitro }
+  ];
+
+  $('upgrades-list').innerHTML = upgConfig.map(cfg => {
+    let isMax = cfg.level >= 5;
+    let cost = cfg.baseCost * (cfg.level + 1);
+    return `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px;">
+        <div>
+          <div style="font-weight: 700;">${cfg.name}</div>
+          <div style="font-size: 12px; color: var(--neon-blue);">Lvl ${cfg.level} / 5</div>
+        </div>
+        <button class="btn btn-sm ${isMax ? 'secondary' : ''}" onclick="buyUpg('${cfg.id}', ${cost})" ${isMax ? 'disabled' : ''}>
+          ${isMax ? 'MAX' : cost + ' 🪙'}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectCar(i) {
+  if (S.own.includes(i)) {
+    S.car = i; save(); renderGarage(); beep(600, 0.1);
+  }
+}
+
+function buyUpg(type, cost) {
+  let upg = S.upgrades[S.car] || { engine: 0, handling: 0, nitro: 0 };
+  if (upg[type] >= 5) return;
+  if (S.coins >= cost) {
+    S.coins -= cost;
+    upg[type]++;
+    S.upgrades[S.car] = upg;
+    save(); renderGarage(); beep(800, 0.1);
+  } else {
+    beep(150, 0.2, 'sawtooth');
+  }
+}
+
+// --- ВИБІР РЕЖИМУ ---
+function renderModes() {
+  $('mode-list').innerHTML = MODES.map((m, i) => `
+    <button class="btn ${i === S.mode ? '' : 'secondary'}" onclick="selectMode(${i})">
+      ${m.n} <div style="font-size: 12px; font-weight: 400; margin-top: 4px;">${m.d}</div>
+    </button>
+  `).join('');
+}
+function selectMode(i) { S.mode = i; save(); renderModes(); beep(600, 0.1); }
+
+// --- НАЛАШТУВАННЯ ---
+function updateSettingsUI() {
+  $('set-auto').textContent = S.auto ? 'АВТОМАТ' : 'МЕХАНІКА';
+  $('set-sound').textContent = S.snd ? 'УВІМК' : 'ВИМК';
+  $('set-sens').value = S.sens;
+}
+
+// --- ОБРОБНИКИ КНОПОК ---
+$('btn-play').onclick = () => { showScreen('scr-mode'); renderModes(); };
+$('btn-mode-back').onclick = () => { showScreen('scr-lobby'); };
+$('btn-garage-back').onclick = () => { showScreen('scr-lobby'); };
+$('btn-settings-back').onclick = () => { showScreen('scr-lobby'); };
+
+// Старт гри
+document.querySelectorAll('#mode-list').forEach(el => el.addEventListener('click', () => {
+  setTimeout(startGame, 200);
+}));
+
+// --- ФІЗИКА ТА ГРА ---
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  horizon = H * 0.35;
+}
+window.addEventListener('resize', resize); resize();
+
+let gas = 0, brk = 0, nit = 0, stc = 0, roadOffset = 0;
+
+function startGame() {
+  showScreen(null);
+  const m = MODES[S.mode];
+  const upg = S.upgrades[S.car] || { engine: 0, handling: 0, nitro: 0 };
+  const baseCar = CARS[S.car];
+  
+  g = {
+    y: 0, v: 0, rpm: .15, gear: 1, sc: 0, 
+    traffic: [], coins: [], particles: [], speedLines: [], 
+    dist: 0, time: m.t, coinCount: 0, nit: 100, inv: 0, st: 200, 
+    run: 1, car: { c: baseCar.c, sp: baseCar.sp * (1 + upg.engine * 0.02), h: baseCar.h * (1 + upg.handling * 0.04) },
+    upg: upg, m: m, hard: S.mode === 2, curve: 0
+  };
+  gameState = 'playing';
+  lastTime = performance.now();
+  reqID = requestAnimationFrame(loop);
+}
+
+function loop(now) {
+  if (gameState !== 'playing' || !g || !g.run) return;
+  const dt = Math.min(2.5, (now - lastTime) / 16.7);
+  lastTime = now;
+  
+  // Фізика
+  const cs = g.car.sp;
+  const boost = nit && g.nit > 0 && g.gear > 0;
+  g.nit = boost ? g.nit - 0.8 * dt : Math.min(100, g.nit + 0.2 * dt);
+  const gm = GM[g.gear] * cs;
+  let rt = g.gear ? g.v / gm * .8 + (gas ? .2 : .05) : (gas ? .95 : .15);
+  g.rpm += (rt - g.rpm) * .2 * dt;
+  
+  if (gas && g.gear && g.rpm < 1) {
+    g.v += .55 * (1 - g.v / (gm + (boost ? 40 : 0))) * (g.rpm < .3 ? .5 : 1) * cs * dt + (boost ? .45 * dt : 0);
+  }
+  g.v -= ((.02 + g.v * .0007) + (brk ? 1.8 : 0) + (g.gear && g.v > gm + (boost ? 40 : 0) ? .6 : 0)) * dt;
+  g.v = Math.max(0, g.v);
+  
+  // АКПП
+  g.sc -= dt;
+  if (S.auto && g.sc <= 0) {
+    if (gas && g.gear < 5 && g.rpm > .88) { g.gear++; g.sc = 25; beep(300, .06); }
+    else if (g.gear > 1 && g.v < GM[g.gear - 1] * cs * .65) { g.gear--; g.sc = 25; }
+  }
+  
+  g.dist += g.v / 3.6 * dt / 60;
+  roadOffset = (roadOffset + g.v * dt * 0.5) % 100;
+  
+  const maxShift = W * 0.35;
+  g.curve += ((g.y / maxShift) * 200 - g.curve) * 2 * dt;
+  g.y += stc * maxShift * 0.05 * g.car.h * (S.sens / 5) * Math.min(1, .35 + g.v / 60) * dt;
+  g.y = Math.max(-maxShift, Math.min(maxShift, g.y));
+  
+  g.inv = Math.max(0, g.inv - dt);
+  if (g.m.t && g.v > 0) { g.time -= dt / 60; if (g.time <= 0) { endGame(); return; } }
+  
+  // Спавн
+  g.st -= g.v * dt * 0.1;
+  if (g.st <= 0 && g.v > 5) {
+    const lanes = [-maxShift * 0.6, 0, maxShift * 0.6];
+    const lane = lanes[Math.random() * lanes.length | 0];
+    g.traffic.push({ z: 1000, x: lane, c: ['#e53935', '#43a047', '#8e24aa', '#039be5', '#fdd835', '#fb8c00'][Math.random() * 6 | 0] });
+    if (g.hard && Math.random() < 0.5) g.traffic.push({ z: 1000, x: lanes[Math.random() * lanes.length | 0], c: '#e53935' });
+    if (Math.random() < 0.6) g.coins.push({ z: 1000, x: lane + rr(-40, 40) });
+    g.st = Math.max(60, rr(200, 350) * (g.hard ? .6 : 1) / (1 + g.dist / 4000));
+  }
+  
+  // Колізії
+  for (let i = g.traffic.length - 1; i >= 0; i--) {
+    let e = g.traffic[i]; e.z -= (g.v * 1.5) * dt;
+    if (e.z <= 0 && !g.inv && Math.abs(e.x - g.y) < 100) {
+      beep(120, .35, 'sawtooth'); navigator.vibrate && navigator.vibrate(100);
+      if (g.m.t) { g.time -= 5; g.inv = 90; g.v *= .3; if (g.time <= 0) { endGame(); return; } }
+      else { endGame(); return; }
     }
-
-    window.addEventListener("resize", resize);
-    resize();
-
-    function roadWidth() { return Math.min(W * 0.72, 420); }
-    function roadCenter(world) {
-      return W / 2 + Math.sin(world * 0.0022) * Math.min(W * 0.17, 90);
+    if (e.z < -100) g.traffic.splice(i, 1);
+  }
+  
+  for (let i = g.coins.length - 1; i >= 0; i--) {
+    let c = g.coins[i]; c.z -= (g.v * 1.5) * dt;
+    if (c.z <= 0 && c.z > -100 && Math.abs(c.x - g.y) < 80) {
+      g.coinCount++; beep(1200, .08, 'sine'); if (g.m.t) g.time += 2;
+      g.coins.splice(i, 1); continue;
     }
-    function worldAtY(y) {
-      return distance + (H * 0.72 - y) / scale;
+    if (c.z < -100) g.coins.splice(i, 1);
+  }
+  
+  draw(boost);
+  reqID = requestAnimationFrame(loop);
+}
+
+function endGame() {
+  gameState = 'result';
+  const gain = g.coinCount * g.m.m, d = Math.floor(g.dist);
+  S.coins += gain;
+  const isRecord = d > S.best;
+  if (isRecord) S.best = d;
+  
+  addXP(Math.floor(d / 10) + gain);
+  save();
+  
+  $('res-title').textContent = g.m.t && g.time <= 0 ? 'ЧАС ВИЙШОВ' : 'АВАРІЯ';
+  $('res-dist').textContent = d;
+  $('res-coins').textContent = '+' + gain;
+  $('res-record').style.display = isRecord ? 'block' : 'none';
+  
+  showScreen('scr-result');
+}
+
+// --- МАЛЮВАННЯ ---
+function car3D(cx, cy, width, col, isPlayer, glow) {
+  const h = width * 1.5, w = width;
+  ctx.save();
+  if (glow) { ctx.shadowColor = col; ctx.shadowBlur = 20; }
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.ellipse(cx, cy + h/2, w*0.6, h*0.15, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(cx - w/2, cy - h/2, w, h, w*0.15); ctx.fill();
+  ctx.fillStyle = 'rgba(10,15,25,0.9)'; ctx.beginPath(); ctx.roundRect(cx - w*0.4, cy - h*0.4, w*0.8, h*0.4, w*0.1); ctx.fill();
+  ctx.fillStyle = '#ff0000'; ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 15;
+  ctx.fillRect(cx - w*0.4, cy + h*0.25, w*0.2, h*0.1); ctx.fillRect(cx + w*0.2, cy + h*0.25, w*0.2, h*0.1);
+  if (isPlayer) { ctx.fillStyle = '#fff'; ctx.font = `900 ${w*0.2}px Montserrat`; ctx.textAlign = 'center'; ctx.fillText('777', cx, cy + h*0.15); }
+  ctx.fillStyle = '#111'; ctx.fillRect(cx - w*0.55, cy - h*0.3, w*0.1, h*0.3); ctx.fillRect(cx + w*0.45, cy - h*0.3, w*0.1, h*0.3);
+  ctx.restore();
+}
+
+function draw(boost) {
+  ctx.fillStyle = '#050510'; ctx.fillRect(0, 0, W, H);
+  
+  // Небо та місто
+  let skyGrad = ctx.createLinearGradient(0, 0, 0, horizon);
+  skyGrad.addColorStop(0, '#050510'); skyGrad.addColorStop(1, '#1a103c');
+  ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, W, horizon);
+  
+  ctx.fillStyle = '#0a0a1a';
+  for(let i=0; i<15; i++) {
+    let bw = W/10, bh = 50 + Math.sin(i*13)*40;
+    let bx = i*bw - (roadOffset*0.1)%bw + (g.curve * 0.1);
+    ctx.fillRect(bx, horizon - bh, bw-2, bh);
+    ctx.fillStyle = 'rgba(0, 229, 255, 0.2)'; ctx.fillRect(bx + 10, horizon - bh + 10, 5, 5);
+    ctx.fillStyle = '#0a0a1a';
+  }
+  
+  // Дорога
+  ctx.fillStyle = '#05050f'; ctx.fillRect(0, horizon, W, H - horizon);
+  const roadBottomW = W * 1.5, roadTopW = W * 0.1;
+  ctx.fillStyle = '#151520';
+  ctx.beginPath();
+  ctx.moveTo(W/2 - roadTopW/2 + g.curve, horizon); ctx.lineTo(W/2 + roadTopW/2 + g.curve, horizon);
+  ctx.lineTo(W/2 + roadBottomW/2, H); ctx.lineTo(W/2 - roadBottomW/2, H);
+  ctx.closePath(); ctx.fill();
+  
+  ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 4; ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 15;
+  ctx.beginPath();
+  ctx.moveTo(W/2 - roadTopW/2 + g.curve, horizon); ctx.lineTo(W/2 - roadBottomW/2, H);
+  ctx.moveTo(W/2 + roadTopW/2 + g.curve, horizon); ctx.lineTo(W/2 + roadBottomW/2, H);
+  ctx.stroke(); ctx.shadowBlur = 0;
+  
+  // Розмітка
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 6;
+  for(let i=0; i<10; i++) {
+    let z = (i * 100 - roadOffset) % 1000; if(z < 0) z += 1000;
+    let p1 = z / 1000, p2 = (z + 50) / 1000;
+    let y1 = horizon + (H - horizon) * p1, y2 = horizon + (H - horizon) * p2;
+    let x1 = W/2 + g.curve * (1-p1), x2 = W/2 + g.curve * (1-p2);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+  
+  // Проекція
+  const project = (z, objX) => {
+    let p = 1 - (z / 1000), w = roadTopW + (roadBottomW - roadTopW) * p;
+    return { x: W/2 + g.curve * p + (objX / (roadBottomW/2)) * (w/2) * 2, y: horizon + (H - horizon) * p, scale: p };
+  };
+  
+  // Рендер трафіку
+  let renderList = g.traffic.map(e => ({type: 'traffic', data: e, z: e.z})).concat(g.coins.map(c => ({type: 'coin', data: c, z: c.z})));
+  renderList.sort((a,b) => b.z - a.z);
+  
+  for (let item of renderList) {
+    let p = project(item.z, item.data.x); if (p.scale <= 0) continue;
+    if (item.type === 'traffic') car3D(p.x, p.y - (160*p.scale)*0.8, 160 * p.scale, item.data.c, false, false);
+    else {
+      let size = 30 * p.scale;
+      ctx.fillStyle = '#ffd600'; ctx.shadowColor = '#ffd600'; ctx.shadowBlur = 10 * p.scale;
+      ctx.beginPath(); ctx.arc(p.x, p.y - size, size/2, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
     }
-
-    function startGame() {
-      distance = 0;
-      speed = 100;
-      health = 3;
-      playerX = W / 2;
-      steering = 0;
-      nextObstacle = 420;
-      obstacles = [];
-      offRoadTime = 0;
-      hitFlash = 0;
-      running = true;
-      message.style.display = "none";
-      lastTime = performance.now();
+  }
+  
+  // Машина гравця
+  const playerW = W * 0.35, playerY = H * 0.85;
+  if (!(g.inv && Math.floor(g.inv/6)%2)) {
+    if (boost) {
+      ctx.fillStyle = '#ff9100'; ctx.shadowColor = '#ff9100'; ctx.shadowBlur = 30;
+      ctx.beginPath(); ctx.ellipse(W/2 + g.y, playerY + playerW*0.6, playerW*0.2, playerW*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
     }
+    car3D(W/2 + g.y, playerY, playerW, g.car.c, true, true);
+  }
+  
+  // HUD
+  ctx.fillStyle = '#fff'; ctx.font = '900 20px Montserrat'; ctx.textAlign = 'left';
+  ctx.fillText('📏 ' + Math.floor(g.dist) + ' м', 20, 40);
+  ctx.textAlign = 'center'; ctx.fillText('🪙 ' + g.coinCount, W/2, 40);
+  if (g.m.t) { ctx.textAlign = 'right'; ctx.fillStyle = g.time < 10 ? '#ff3d81' : '#fff'; ctx.fillText('⏱ ' + Math.max(0, Math.ceil(g.time)), W-80, 40); }
+  
+  const spd = Math.round(g.v);
+  ctx.textAlign = 'center'; ctx.font = '900 48px Montserrat'; ctx.fillStyle = '#fff'; ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 15;
+  ctx.fillText(spd, W - 80, H - 40);
+  ctx.font = '900 16px Montserrat'; ctx.fillStyle = '#00e5ff'; ctx.fillText('КМ/Г', W - 80, H - 20); ctx.shadowBlur = 0;
+  
+  ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillRect(W/2-100, H-15, 200, 8);
+  ctx.fillStyle = '#ff9100'; ctx.fillRect(W/2-100, H-15, 200*g.nit/100, 8);
+}
 
-    startButton.addEventListener("click", startGame);
+// --- КЕРУВАННЯ ---
+function hold(id, on, off) {
+  const e = $(id);
+  e.addEventListener('pointerdown', v => { v.preventDefault(); e.classList.add('on'); on(); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => e.addEventListener(n, () => { e.classList.remove('on'); off(); }));
+}
+hold('gs', () => gas = 1, () => gas = 0);
+hold('br', () => brk = 1, () => brk = 0);
+hold('nb', () => nit = 1, () => nit = 0);
+hold('su', () => stc = -1, () => stc = 0);
+hold('sd', () => stc = 1, () => stc = 0);
 
-    document.querySelectorAll("[data-control]").forEach(button => {
-      const control = button.dataset.control;
-      button.addEventListener("pointerdown", event => {
-        event.preventDefault();
-        held[control] = true;
-        button.setPointerCapture(event.pointerId);
-      });
-      const release = event => {
-        event.preventDefault();
-        held[control] = false;
-      };
-      button.addEventListener("pointerup", release);
-      button.addEventListener("pointercancel", release);
-      button.addEventListener("lostpointercapture", () => held[control] = false);
-    });
+function shift(d) { if (!g || S.auto) return; const n = Math.max(0, Math.min(5, g.gear + d)); if (n != g.gear) { g.gear = n; beep(300, .06); } }
+$('gu').onclick = () => shift(1); $('gd').onclick = () => shift(-1);
+$('pb').onclick = () => {
+  if (gameState === 'playing') {
+    gameState = 'paused';
+    g.run = 0;
+    cancelAnimationFrame(reqID);
+    $('res-title').textContent = 'ПАУЗА';
+    $('res-dist').textContent = 'Гра зупинена';
+    $('res-coins').textContent = '';
+    $('res-record').style.display = 'none';
+    $('btn-restart').textContent = '▶ ПРОДОВЖИТИ';
+    $('btn-restart').onclick = () => {
+      gameState = 'playing'; g.run = 1; lastTime = performance.now();
+      $('btn-restart').textContent = '↻ ЩЕ РАЗ';
+      $('btn-restart').onclick = startGame;
+      showScreen(null); reqID = requestAnimationFrame(loop);
+    };
+    showScreen('scr-result');
+  }
+};
 
-    window.addEventListener("keydown", event => {
-      if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") held.left = true;
-      if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") held.right = true;
-      if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") held.gas = true;
-      if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") held.brake = true;
-    });
-    window.addEventListener("keyup", event => {
-      if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") held.left = false;
-      if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") held.right = false;
-      if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") held.gas = false;
-      if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") held.brake = false;
-    });
-
-    function addObstacle() {
-      const type = Math.random() < 0.72 ? "mud" : "log";
-      const offset = (Math.random() - 0.5) * roadWidth() * 0.72;
-      obstacles.push({
-        distance: nextObstacle,
-        x: roadCenter(nextObstacle) + offset,
-        type,
-        hit: false
-      });
-      nextObstacle += 260 + Math.random() * 260;
+// --- ПЕРЕВІРКА ОНОВЛЕНЬ ---
+let upu = '';
+async function checkUpdates() {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`);
+    const data = await res.json();
+    let n = parseInt((data.tag_name || '').replace(/[^0-9]/g, ''));
+    if (n > BUILD && data.assets && data.assets.length > 0) {
+      let apk = data.assets.find(a => a.name.endsWith('.apk')) || data.assets[0];
+      upu = apk.browser_download_url;
+      $('upd-msg').textContent = `Доступна версія ${n} (у вас ${BUILD})`;
+      showScreen('scr-update');
     }
+  } catch(e) {}
+}
 
-    function drawBackground() {
-      ctx.fillStyle = "#294b3b";
-      ctx.fillRect(0, 0, W, H);
+$('btn-update').onclick = () => {
+  try {
+    const B = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Browser;
+    if (B) B.open({ url: upu }); else window.open(upu, '_blank');
+  } catch(e) { window.open(upu, '_blank'); }
+};
+$('btn-update-later').onclick = () => { showScreen('scr-lobby'); };
 
-      // Болото и маленькие кочки
-      for (let i = 0; i < 32; i++) {
-        const x = (i * 137 + 43) % W;
-        const y = ((i * 197 + distance * scale * 0.35) % (H + 80)) - 40;
-        ctx.fillStyle = i % 2 ? "#365b46" : "#203f35";
-        ctx.beginPath();
-        ctx.ellipse(x, y, 13 + (i % 5) * 3, 5 + (i % 3) * 2, 0.3, 0, Math.PI * 2);
-        ctx.fill();
-      }
+// --- ІНІЦІАЛІЗАЦІЯ ---
+$('btn-restart').onclick = startGame;
+$('btn-menu').onclick = () => { showScreen('scr-lobby'); updateProfileUI(); updateDailyBtn(); };
+$('btn-settings').onclick = () => { updateSettingsUI(); showScreen('scr-settings'); };
+$('set-auto').onclick = () => { S.auto = S.auto ? 0 : 1; save(); updateSettingsUI(); };
+$('set-sound').onclick = () => { S.snd = S.snd ? 0 : 1; save(); updateSettingsUI(); };
+$('set-sens').oninput = e => { S.sens = +e.target.value; save(); };
+$('btn-reset').onclick = () => {
+  if (confirm('Точно скинути весь прогрес?')) {
+    S = { coins: 0, best: 0, car: 0, own: [0], mode: 0, snd: 1, sens: 5, auto: 1, xp: 0, lvl: 1, upgrades: {}, lastDaily: 0 };
+    save(); updateProfileUI(); renderGarage();
+  }
+};
 
-      // Извилистая болотная тропа
-      const left = [];
-      const right = [];
-      for (let y = -20; y <= H + 20; y += 24) {
-        const c = roadCenter(worldAtY(y));
-        const half = roadWidth() / 2;
-        left.push([c - half, y]);
-        right.push([c + half, y]);
-      }
-
-      ctx.beginPath();
-      left.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-      [...right].reverse().forEach(([x, y]) => ctx.lineTo(x, y));
-      ctx.closePath();
-      ctx.fillStyle = "#66553a";
-      ctx.fill();
-
-      ctx.beginPath();
-      left.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-      ctx.strokeStyle = "#9c814c";
-      ctx.lineWidth = 5;
-      ctx.stroke();
-
-      ctx.beginPath();
-      right.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-      ctx.stroke();
-    }
-
-    function drawObstacle(obstacle, y) {
-      if (obstacle.type === "mud") {
-        ctx.fillStyle = "#192e27";
-        ctx.beginPath();
-        ctx.ellipse(obstacle.x, y, 25, 16, -0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#49614a";
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = "#617449";
-        ctx.beginPath();
-        ctx.ellipse(obstacle.x - 7, y - 3, 7, 3, 0.2, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.save();
-        ctx.translate(obstacle.x, y);
-        ctx.rotate(-0.15);
-        ctx.fillStyle = "#754b2d";
-        ctx.fillRect(-25, -7, 50, 14);
-        ctx.fillStyle = "#a36f3d";
-        ctx.fillRect(-22, -6, 44, 4);
-        ctx.restore();
-      }
-    }
-
-    function drawTractor() {
-      const y = H * 0.72;
-      ctx.save();
-      ctx.translate(playerX, y);
-
-      // Колёса
-      ctx.fillStyle = "#20201c";
-      ctx.fillRect(-23, -18, 10, 30);
-      ctx.fillRect(13, -18, 10, 30);
-      ctx.fillRect(-18, 8, 8, 18);
-      ctx.fillRect(10, 8, 8, 18);
-
-      // Корпус и кабина
-      ctx.fillStyle = "#e7a72e";
-      ctx.fillRect(-15, -20, 30, 38);
-      ctx.fillStyle = "#f4c34d";
-      ctx.fillRect(-12, -30, 24, 21);
-      ctx.fillStyle = "#97c9c4";
-      ctx.fillRect(-8, -27, 16, 13);
-      ctx.fillStyle = "#d8512f";
-      ctx.fillRect(-5, 11, 10, 10);
-
-      // Фары
-      ctx.fillStyle = "#fff2a1";
-      ctx.fillRect(-13, -23, 5, 4);
-      ctx.fillRect(8, -23, 5, 4);
-      ctx.restore();
-    }
-
-    function draw() {
-      drawBackground();
-
-      obstacles.forEach(obstacle => {
-        const y = H * 0.72 - (obstacle.distance - distance) * scale;
-        if (y > -40 && y < H + 40) drawObstacle(obstacle, y);
-      });
-
-      drawTractor();
-
-      if (hitFlash > 0) {
-        ctx.fillStyle = `rgba(255,60,30,${hitFlash * 0.22})`;
-        ctx.fillRect(0, 0, W, H);
-      }
-    }
-
-    function gameOver() {
-      running = false;
-      message.style.display = "grid";
-      document.querySelector("#card h1").textContent = "💥 Трактор застрял!";
-      document.querySelector("#card p").textContent =
-        `Ты проехал ${Math.floor(distance / 10)} метров. Попробуешь ещё раз?`;
-      startButton.textContent = "Ещё раз!";
-    }
-
-    function update(dt) {
-      if (!running) return;
-
-      const targetSpeed = held.gas ? 165 : held.brake ? 55 : 100;
-      speed += (targetSpeed - speed) * Math.min(1, dt * 2.5);
-      distance += speed * dt;
-
-      const direction = (held.right ? 1 : 0) - (held.left ? 1 : 0);
-      steering += (direction - steering) * Math.min(1, dt * 8);
-      playerX += steering * (210 + speed * 0.55) * dt;
-      playerX = Math.max(22, Math.min(W - 22, playerX));
-
-      while (nextObstacle < distance + 800) addObstacle();
-
-      const center = roadCenter(distance);
-      const halfRoad = roadWidth() / 2;
-      if (Math.abs(playerX - center) > halfRoad - 18) {
-        offRoadTime += dt;
-        if (offRoadTime > 1.5) {
-          health--;
-          offRoadTime = 0;
-          hitFlash = 1;
-        }
-      } else {
-        offRoadTime = Math.max(0, offRoadTime - dt * 1.5);
-      }
-
-      for (const obstacle of obstacles) {
-        if (!obstacle.hit && Math.abs(obstacle.distance - distance) < 24 &&
-            Math.abs(obstacle.x - playerX) < 34) {
-          obstacle.hit = true;
-          health--;
-          speed *= 0.55;
-          hitFlash = 1;
-        }
-      }
-
-      obstacles = obstacles.filter(o => o.distance > distance - 100);
-      hitFlash = Math.max(0, hitFlash - dt * 2.5);
-
-      scoreEl.textContent = Math.floor(distance / 10);
-      healthEl.textContent = "❤️".repeat(Math.max(0, health)) || "0";
-
-      if (health <= 0) gameOver();
-    }
-
-    function frame(time) {
-      const dt = Math.min((time - lastTime) / 1000 || 0, 0.04);
-      lastTime = time;
-      update(dt);
-      draw();
-      requestAnimationFrame(frame);
-    }
-
-    requestAnimationFrame(frame);
-  </script>
+updateProfileUI();
+updateDailyBtn();
+renderGarage();
+renderModes();
+setTimeout(checkUpdates, 2000);
+</script>
 </body>
 </html>
