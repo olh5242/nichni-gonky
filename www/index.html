@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Нічні гонки</title>
+<style>
+:root{--bg:#14161c;--fg:#fff;--ac:#ffb300;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+canvas{display:block;width:100%;height:100%}
+#ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(10,12,16,.82);text-align:center;padding:24px}
+h1{margin:0;font-size:34px;color:var(--ac)}p{margin:0;opacity:.85}
+button{background:var(--ac);color:#111;border:0;border-radius:14px;padding:14px 38px;font-size:20px;font-weight:700}
+#hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;font-weight:700;font-size:18px;pointer-events:none;text-shadow:0 1px 3px #000}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud"><span id="sc">0 м</span><span id="bs"></span></div>
+<div id="ov"><h1>🏎️ Нічні гонки</h1><p>Веди пальцем вліво-вправо.<br>Обʼїжджай машини, не зіткнись!</p><p id="res"></p><button id="go">Старт</button></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),ov=document.getElementById('ov'),sc=document.getElementById('sc'),bs=document.getElementById('bs'),res=document.getElementById('res');
+let W,H,rw,rx,cw,ch,run=false,p,cars,speed,dist,off,tx,timer,best=0;
+try{best=+localStorage.getItem('best')||0}catch(e){}
+bs.textContent=best?'Рекорд: '+best+' м':'';
+function rs(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);rw=Math.min(W*.92,380);rx=(W-rw)/2;cw=rw*.14;ch=cw*1.8}
+addEventListener('resize',rs);rs();
+function pos(e){tx=e.clientX}
+c.addEventListener('pointerdown',pos);c.addEventListener('pointermove',pos);
+addEventListener('keydown',e=>{if(!run)return;if(e.key=='ArrowLeft')tx=p.x-80;if(e.key=='ArrowRight')tx=p.x+80});
+function start(){p={x:W/2,y:H-ch-60};tx=p.x;cars=[];speed=5;dist=0;off=0;timer=0;run=true;ov.style.display='none';loop()}
+document.getElementById('go').onclick=start;
+function car(cx,cy,col){x.fillStyle=col;x.beginPath();x.roundRect(cx-cw/2,cy-ch/2,cw,ch,8);x.fill();x.fillStyle='rgba(0,0,0,.55)';x.fillRect(cx-cw*.36,cy-ch*.22,cw*.72,ch*.2);x.fillRect(cx-cw*.36,cy+ch*.16,cw*.72,ch*.14)}
+function end(){run=false;const d=Math.floor(dist);if(d>best){best=d;try{localStorage.setItem('best',d)}catch(e){}}
+bs.textContent='Рекорд: '+best+' м';res.textContent='Ти проїхав '+d+' м';ov.style.display='flex';document.getElementById('go').textContent='Ще раз'}
+function loop(){if(!run)return;
+speed=Math.min(16,5+dist/400);dist+=speed/10;off=(off+speed)%60;
+p.x+=(Math.max(rx+cw,Math.min(rx+rw-cw,tx))-p.x)*.2;
+timer-=speed;if(timer<=0){cars.push({x:rx+cw+Math.random()*(rw-cw*2),y:-ch,v:speed*.35+Math.random()*2,c:['#e53935','#43a047','#8e24aa','#039be5','#fdd835'][Math.random()*5|0]});timer=Math.max(130,300-dist/6)}
+for(const k of cars){k.y+=speed-k.v*.5;
+if(Math.abs(k.x-p.x)<cw*.85&&Math.abs(k.y-p.y)<ch*.9){end();break}}
+cars=cars.filter(k=>k.y<H+ch);
+x.fillStyle='#1b5e20';x.fillRect(0,0,W,H);
+x.fillStyle='#333840';x.fillRect(rx,0,rw,H);
+x.fillStyle='#fff';x.fillRect(rx,0,4,H);x.fillRect(rx+rw-4,0,4,H);
+for(let i=-1;i<H/60+1;i++){x.fillRect(W/2-3,i*60+off,6,30)}
+for(const k of cars)car(k.x,k.y,k.c);
+car(p.x,p.y,'#ffb300');
+sc.textContent=Math.floor(dist)+' м';
+requestAnimationFrame(loop)}
+x.fillStyle='#333840';x.fillRect(0,0,W,H);
+</script></body></html>
